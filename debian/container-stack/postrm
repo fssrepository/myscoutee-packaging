@@ -1,0 +1,58 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+case "${1:-}" in
+  remove|purge|upgrade|failed-upgrade|abort-install|abort-upgrade|disappear)
+    ;;
+  *)
+    printf 'Unsupported @@PACKAGE_NAME@@ postrm action: %s\n' \
+      "${1:-missing}" >&2
+    exit 1
+    ;;
+esac
+
+read_env_value() {
+  local key="$1"
+  local file="${MYSCOUTEE_REGISTRY_POSTRM_ENV_FILE:-/etc/@@PACKAGE_NAME@@/registry.env}"
+  local line value
+
+  [[ -f "$file" && ! -L "$file" ]] || return 1
+  line="$(
+    sed -n "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//p" \
+      "$file" | tail -n 1
+  )"
+  [[ -n "$line" ]] || return 1
+  value="${line%$'\r'}"
+  if [[ "$value" == \"*\" && "$value" == *\" ]]; then
+    value="${value:1:${#value}-2}"
+  elif [[ "$value" == \'*\' && "$value" == *\' ]]; then
+    value="${value:1:${#value}-2}"
+  fi
+  printf '%s' "$value"
+}
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
+if [[ "${1:-}" == "purge" ]]; then
+  registry_image="$(read_env_value REGISTRY_PRODUCTION_IMAGE || true)"
+  nginx_image="$(read_env_value REGISTRY_NGINX_PRODUCTION_IMAGE || true)"
+  if command -v docker >/dev/null 2>&1; then
+    if [[ "$registry_image" =~ ^@@PACKAGE_NAME@@:[0-9]+\.[0-9]+\.[0-9]+-prod$ ]]; then
+      docker image rm -f "$registry_image" >/dev/null 2>&1 || true
+    fi
+    if [[ "$nginx_image" =~ ^@@NGINX_IMAGE@@:[0-9]+\.[0-9]+\.[0-9]+-prod$ ]]; then
+      docker image rm -f "$nginx_image" >/dev/null 2>&1 || true
+    fi
+  fi
+
+  rm -rf /etc/@@PACKAGE_NAME@@
+  rm -rf /var/lib/@@PACKAGE_NAME@@
+  rm -rf /opt/@@PACKAGE_NAME@@
+  cat <<'MESSAGE'
+@@DISPLAY_NAME@@ was purged. Its host configuration, TLS material, SQLite
+state, signing keys, VOPRF keyring, and configured managed images were removed.
+Independent backups were not touched.
+MESSAGE
+fi

@@ -1,0 +1,9 @@
+{
+  "debian/postinst": "7c260ded1234f6d476274d8e71322ab11abcec5c458ff701bbcba9ac4009e23c",
+  "debian/prerm": "0e3dd56810399af1319dad7ce2af452ef967215d19849f5a8ff501f86db1a686",
+  "debian/postrm": "63f8e3c3014d81c7a82eab212d71e24782ada883d2d2e04a632dabdb4e53f05b",
+  "systemd/myscoutee-registry.service": "628cc535e447ed283fab53ae52a23e80a28e195afb02ad2f5baf9a7689fdd88e",
+  "scripts/qualify-deployment.sh": "119f8518653f5edf70b9516a7fc07fe08807e760140ede4d7379f716ec8e85ab",
+  "scripts/registry-compose.sh": "a3218ee7102fb096831a1dfe87d3d0999da18f3ecd431ebf0c22fbf4b407789b",
+  "client-tools/verify-release.sh": "4dfce5d18c6b227fa4d88dfd6f2bb8197c7d1679f8d3b126900d4d4084134441"
+}

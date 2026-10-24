@@ -1,0 +1,154 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+case "${1:-}" in
+  configure)
+    ;;
+  abort-upgrade|abort-remove|abort-deconfigure)
+    exit 0
+    ;;
+  *)
+    printf 'Unsupported @@PACKAGE_NAME@@ postinst action: %s\n' \
+      "${1:-missing}" >&2
+    exit 1
+    ;;
+esac
+
+install_root="/opt/@@PACKAGE_NAME@@"
+config_root="/etc/@@PACKAGE_NAME@@"
+config_file="$config_root/registry.env"
+config_example="$install_root/packaging/templates/registry.env"
+state_root="/var/lib/@@PACKAGE_NAME@@"
+data_root="$state_root/data"
+manifest="$install_root/packaging/IMAGE-MANIFEST.json"
+fingerprint_helper="$install_root/packaging/scripts/image-content-fingerprint.sh"
+version="$(sed -n '1p' "$install_root/packaging/VERSION")"
+
+[[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] ||
+  {
+    printf '%s\n' '@@PACKAGE_NAME@@: installed version marker is invalid' >&2
+    exit 1
+  }
+[[ ! -L "$config_root" && ! -L "$state_root" ]] || {
+  printf '%s\n' \
+    '@@PACKAGE_NAME@@: config and state roots must not be symbolic links' >&2
+  exit 1
+}
+
+install -d -o root -g root -m 0700 "$config_root" "$config_root/tls"
+install -d -o root -g root -m 0755 "$state_root"
+install -d -m 0700 "$data_root"
+chown +@@RUNTIME_UID@@:+@@RUNTIME_GID@@ "$data_root"
+chmod 0700 "$data_root"
+
+if [[ -L "$config_file" ]]; then
+  printf '@@PACKAGE_NAME@@: refusing symbolic-link config: %s\n' \
+    "$config_file" >&2
+  exit 1
+fi
+if [[ ! -e "$config_file" ]]; then
+  install -o root -g root -m 0600 "$config_example" "$config_file"
+fi
+
+upsert_env_value() {
+  local key="$1"
+  local value="$2"
+  local escaped="${value//\\/\\\\}"
+
+  escaped="${escaped//&/\\&}"
+  if grep -q "^[[:space:]]*${key}[[:space:]]*=" "$config_file"; then
+    sed -i \
+      "s|^[[:space:]]*${key}[[:space:]]*=.*|${key}=${escaped}|" \
+      "$config_file"
+  else
+    printf '\n%s=%s\n' "$key" "$value" >>"$config_file"
+  fi
+}
+
+upsert_env_value MYSCOUTEE_REGISTRY_VERSION "$version"
+upsert_env_value REGISTRY_PRODUCTION_IMAGE \
+  "@@PACKAGE_NAME@@:${version}-prod"
+upsert_env_value REGISTRY_NGINX_PRODUCTION_IMAGE \
+  "@@NGINX_IMAGE@@:${version}-prod"
+chmod 0600 "$config_file"
+chown root:root "$config_file"
+
+if ! command -v docker >/dev/null 2>&1; then
+  printf '%s\n' \
+    'Docker is missing; install this local package with APT to resolve dependencies.' >&2
+  exit 1
+fi
+docker compose version >/dev/null 2>&1 || {
+  printf '%s\n' 'Docker Compose v2 is required.' >&2
+  exit 1
+}
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl enable --now docker.service >/dev/null 2>&1 || true
+fi
+docker info >/dev/null 2>&1 || {
+  printf '%s\n' 'Docker daemon is not reachable.' >&2
+  exit 1
+}
+
+jq -e --arg version "$version" '
+  .schemaVersion == 1
+  and .releaseVersion == $version
+  and .bundled == true
+  and (.images | type == "array" and length == 2)
+  and ([.images[].service] | sort == ["nginx", "registry"])
+  and all(.images[];
+    (.container == .service)
+    and (.reference | type == "string" and length > 0)
+    and (.imageId | test("^sha256:[0-9a-f]{64}$"))
+    and (.contentFingerprint | test("^sha256:[0-9a-f]{64}$"))
+    and (.archive | type == "string" and length > 0)
+    and (.archiveSha256 | test("^sha256:[0-9a-f]{64}$")))
+' "$manifest" >/dev/null || {
+  printf '%s\n' 'Bundled image manifest is invalid.' >&2
+  exit 1
+}
+
+while IFS=$'\t' read -r reference archive expected_archive expected_fingerprint; do
+  archive_path="$install_root/$archive"
+  [[ -f "$archive_path" && ! -L "$archive_path" ]] || {
+    printf 'Bundled image archive is missing: %s\n' "$archive" >&2
+    exit 1
+  }
+  actual_archive="sha256:$(sha256sum "$archive_path" | awk '{print $1}')"
+  [[ "$actual_archive" == "$expected_archive" ]] || {
+    printf 'Bundled image archive checksum mismatch: %s\n' "$archive" >&2
+    exit 1
+  }
+  tar -tf "$archive_path" >/dev/null || {
+    printf 'Bundled image archive is invalid: %s\n' "$archive" >&2
+    exit 1
+  }
+  docker load --input "$archive_path" >/dev/null
+  docker image inspect "$reference" >/dev/null 2>&1 || {
+    printf 'Bundled image tag was not loaded: %s\n' "$reference" >&2
+    exit 1
+  }
+  actual_fingerprint="$(
+    "$fingerprint_helper" docker "$reference" 2>/dev/null || true
+  )"
+  [[ "$actual_fingerprint" == "$expected_fingerprint" ]] || {
+    printf 'Bundled image content mismatch: %s\n' "$reference" >&2
+    exit 1
+  }
+done < <(jq -r \
+  '.images[] | [.reference, .archive, .archiveSha256, .contentFingerprint] | @tsv' \
+  "$manifest")
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  systemctl enable @@PACKAGE_NAME@@.service >/dev/null 2>&1 || true
+fi
+
+cat <<MESSAGE
+@@DISPLAY_NAME@@ ${version} is installed and its two production images are
+loaded, but the Registry service was not started or restarted.
+
+Review ${config_file}, provision its TLS certificate and private key, then run:
+  systemctl start @@PACKAGE_NAME@@
+  ${install_root}/packaging/scripts/qualify-deployment.sh check --expected-version ${version}
+MESSAGE

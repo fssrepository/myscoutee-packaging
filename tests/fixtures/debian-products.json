@@ -1,0 +1,174 @@
+{
+  "myscoutee-backend": {
+    "revision": "c0c9ceefdd192779534f42b2c564b5d30148ddfd",
+    "files": {
+      "postrm": "e9c8a921bb5ccc99dd53074ae9cf25f2bfc27043baa157c9c6f17bdaafadb01b",
+      "prerm": "8f4778280f239e9a129bc7451e763e2e23acab87e61683571d5e681d0dc6d15f",
+      "preinst": "5ef094d485b72c5f18bf91ef8c82c5c8f17afffcf5c07aa421f1a0f8e7425523",
+      "postinst": "180fcdb9a02c59f7aae42ff63dd087b0159d693115aa1de5feab389fc3628fa3",
+      "control": "95613ae99a094103c8838a2d4f471d873dc06189ffe7e4213d70acc4988599cd"
+    },
+    "release": {
+      "packageName": "myscoutee",
+      "runtimeIdentity": {
+        "uid": 10001,
+        "gid": 10001
+      },
+      "images": [
+        {
+          "service": "nginx-base",
+          "container": null,
+          "repository": "myscoutee-nginx",
+          "tagSuffix": "base",
+          "environment": "NGINX_BASE_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "nginx",
+          "container": "nginx",
+          "repository": "myscoutee-nginx",
+          "tagSuffix": "prod",
+          "environment": "NGINX_PRODUCTION_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "profilemanagement",
+          "container": "myscoutee",
+          "repository": "myscoutee-api",
+          "tagSuffix": "prod",
+          "environment": "MYSCOUTEE_PRODUCTION_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "minio",
+          "container": "minio",
+          "repository": "myscoutee-minio",
+          "tagSuffix": "prod",
+          "environment": "MINIO_PRODUCTION_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "registry-demo",
+          "container": "registry-demo",
+          "repository": "myscoutee-registry",
+          "tagSuffix": "prod",
+          "environment": "REGISTRY_DEMO_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "payment-simulator",
+          "container": "payment-simulator",
+          "repository": "myscoutee-payment-simulator",
+          "tagSuffix": "prod",
+          "environment": "PAYMENT_SIMULATOR_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "mcp",
+          "container": "mcp",
+          "repository": "myscoutee-mcp",
+          "tagSuffix": "prod",
+          "environment": "MCP_IMAGE",
+          "sinceVersion": "1.3.0-qa.1"
+        }
+      ]
+    },
+    "control": {
+      "schemaVersion": 1,
+      "Description": "MyScoutee production bundle\n Production packaging metadata for the MyScoutee Docker-based VPS deploy.\n The package is expected to install the application bundle, systemd unit,\n and operational helper scripts. Docker is a package dependency; optional\n server convenience tools remain recommendations."
+    },
+    "purge": {
+      "schemaVersion": 1,
+      "volumes": [
+        {
+          "environment": "REGISTRY_DEMO_VOLUME_NAME",
+          "default": "myscoutee-registry-demo-data-v1"
+        },
+        {
+          "environment": "REGISTRY_DEMO_CLIENT_VOLUME_NAME",
+          "default": "myscoutee-registry-demo-client-data-v1"
+        },
+        {
+          "environment": "PAYMENT_SIMULATOR_VOLUME_NAME",
+          "default": "myscoutee-payment-simulator-data-v1"
+        },
+        {
+          "environment": "MYSCOUTEE_NGINX_STATE_VOLUME",
+          "default": "myscoutee-nginx-state-v1"
+        }
+      ]
+    }
+  },
+  "myscoutee-template": {
+    "revision": "14cf9fa606d8546ff0b66eb93d38d6cdc65a3e96",
+    "files": {
+      "postrm": "845e6b3c07be09db467b0f6a6b7d83955c333aa259a6974f698a6affaaf35397",
+      "prerm": "8f4778280f239e9a129bc7451e763e2e23acab87e61683571d5e681d0dc6d15f",
+      "preinst": "014803a626cb3ce7af7a1671f91446e97ac972a371a188be9283916aab166b5a",
+      "postinst": "180fcdb9a02c59f7aae42ff63dd087b0159d693115aa1de5feab389fc3628fa3",
+      "control": "575ddd0b3a73c457461959952a743ba1a40c415161834762fbf49bad25491561"
+    },
+    "release": {
+      "packageName": "myscoutee-template",
+      "runtimeIdentity": {
+        "uid": 10002,
+        "gid": 10002
+      },
+      "images": [
+        {
+          "service": "nginx-base",
+          "container": null,
+          "repository": "myscoutee-template-nginx",
+          "tagSuffix": "base",
+          "environment": "NGINX_BASE_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "nginx",
+          "container": "nginx",
+          "repository": "myscoutee-template-nginx",
+          "tagSuffix": "prod",
+          "environment": "NGINX_PRODUCTION_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "profilemanagement",
+          "container": "myscoutee-template",
+          "repository": "myscoutee-template-api",
+          "tagSuffix": "prod",
+          "environment": "MYSCOUTEE_PRODUCTION_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "minio",
+          "container": "minio",
+          "repository": "myscoutee-template-minio",
+          "tagSuffix": "prod",
+          "environment": "MINIO_PRODUCTION_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "mcp",
+          "container": "mcp",
+          "repository": "myscoutee-template-mcp",
+          "tagSuffix": "prod",
+          "environment": "MCP_IMAGE",
+          "sinceVersion": "1.0.0"
+        }
+      ]
+    },
+    "control": {
+      "schemaVersion": 1,
+      "Description": "Minimal application framework production bundle\n Production packaging metadata for the template Docker deployment.\n The package is expected to install the application bundle, systemd unit,\n and operational helper scripts. Docker is a package dependency; optional\n server convenience tools remain recommendations."
+    },
+    "purge": {
+      "schemaVersion": 1,
+      "volumes": [
+        {
+          "environment": "MYSCOUTEE_NGINX_STATE_VOLUME",
+          "default": "myscoutee-template-nginx-state-v1"
+        }
+      ]
+    }
+  }
+}

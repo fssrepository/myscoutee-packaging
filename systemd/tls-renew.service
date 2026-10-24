@@ -1,0 +1,20 @@
+[Unit]
+Description=Renew operator-managed @DISPLAY_NAME@ certificates when enabled
+After=network-online.target docker.service @PACKAGE_NAME@.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/@PACKAGE_NAME@/@PACKAGE_NAME@.env
+Environment=MYSCOUTEE_TLS_STATE_DIR=/var/lib/@PACKAGE_NAME@/tls
+ExecStart=/usr/bin/flock /run/@PACKAGE_NAME@-tls-worker.lock /opt/@PACKAGE_NAME@/packaging/scripts/myscoutee-tls-worker.sh --renew
+UMask=0077
+TimeoutStartSec=20min
+PrivateTmp=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true

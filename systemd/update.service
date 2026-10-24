@@ -1,0 +1,26 @@
+[Unit]
+Description=Install one verified operator-approved @DISPLAY_NAME@ update
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/@PACKAGE_NAME@/@PACKAGE_NAME@.env
+# The companion .path unit watches this exact host location. Keep the
+# request/state path fixed so Java and the privileged worker cannot silently
+# diverge through environment interpolation.
+Environment=MYSCOUTEE_UPDATE_STATE_DIR=/var/lib/@PACKAGE_NAME@/update
+ExecStart=/usr/bin/flock --nonblock /run/@PACKAGE_NAME@-update-worker.lock /opt/@PACKAGE_NAME@/packaging/scripts/myscoutee-update-worker.sh
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=6
+TimeoutStartSec=0
+PrivateTmp=true
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+LockPersonality=true
+RestrictRealtime=true

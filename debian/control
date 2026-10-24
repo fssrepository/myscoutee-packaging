@@ -1,0 +1,9 @@
+Package: @PACKAGE_NAME@
+Version: @VERSION@
+Section: @CONTROL_SECTION@
+Priority: @CONTROL_PRIORITY@
+Architecture: @ARCHITECTURE@
+Maintainer: @CONTROL_MAINTAINER@
+Depends: @CONTROL_DEPENDS@
+Recommends: @CONTROL_RECOMMENDS@
+Description: @CONTROL_DESCRIPTION@

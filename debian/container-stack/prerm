@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+case "${1:-}" in
+  upgrade|failed-upgrade)
+    # Upgrade preserves the running stack. An operator explicitly restarts and
+    # qualifies the new release during the approved maintenance window.
+    exit 0
+    ;;
+  remove|deconfigure)
+    if command -v systemctl >/dev/null 2>&1; then
+      systemctl stop @@PACKAGE_NAME@@.service >/dev/null 2>&1 || true
+      systemctl disable @@PACKAGE_NAME@@.service >/dev/null 2>&1 || true
+    fi
+    if [[ -x /opt/@@PACKAGE_NAME@@/packaging/scripts/registry-compose.sh ]]; then
+      /opt/@@PACKAGE_NAME@@/packaging/scripts/registry-compose.sh \
+        down >/dev/null 2>&1 || true
+    fi
+    ;;
+  *)
+    printf 'Unsupported @@PACKAGE_NAME@@ prerm action: %s\n' \
+      "${1:-missing}" >&2
+    exit 1
+    ;;
+esac

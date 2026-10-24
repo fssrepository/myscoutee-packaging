@@ -1,0 +1,1363 @@
+{
+  "schemaVersion": 1,
+  "batch": "3.1 release-signing and archive-audit",
+  "sources": {
+    "myscoutee-backend": {
+      "revision": "81ca568c3197f6caa8f8d4522dd58594eb765818",
+      "files": [
+        {
+          "path": "packaging/release/audit-nested-archive.py",
+          "sha256": "c03d45636b9a47cb39d50c4f0ae732446eea8193282723c6f22c9fcadb227f4f"
+        },
+        {
+          "path": "packaging/release/private_key_material.py",
+          "sha256": "3ef5217a42846583a0d6124d8c5ffd17bd5e198693a1a64cb6f714f731bbc87e"
+        },
+        {
+          "path": "packaging/release/sign-release-artifacts.sh",
+          "sha256": "a1f5bc630a7dd8e1bb7d5a9a28d33b743a4d0d1b5c3daf6cd0e6444aac7714a9"
+        },
+        {
+          "path": "packaging/release/sign-update-manifest.py",
+          "sha256": "dd3e21c5cce162470f8594cf38b13217c5e56361c5cfe738d6f715de663a68e5"
+        },
+        {
+          "path": "packaging/release/prepare-release.py",
+          "sha256": "c85d07329b59cadaac6825057a08bb2a5e63cf99a24209f38c7f4162aa41f8f6"
+        },
+        {
+          "path": "packaging/tests/release-signing-test.sh",
+          "sha256": "c6fedacccf78d7f516510827ae32d99cfffd280db543731e3b566967a1482ae5"
+        },
+        {
+          "path": "packaging/tests/release-bundle-test.py",
+          "sha256": "527227fde9d55bcbb52652e4831cbc49ec89dc67b4a1a294589bf773a8c064e0"
+        },
+        {
+          "path": "packaging/release/update-compatibility-policy.json",
+          "sha256": "15ea33cc8d678939bdcfd388b610f262ade933085781c08c4ec2ddc70b67b6d7"
+        }
+      ]
+    },
+    "myscoutee-template": {
+      "revision": "9ae366ed68f93fcaad03e96b2010d07d0c1b1589",
+      "files": [
+        {
+          "path": "packaging/release/audit-nested-archive.py",
+          "sha256": "c03d45636b9a47cb39d50c4f0ae732446eea8193282723c6f22c9fcadb227f4f"
+        },
+        {
+          "path": "packaging/release/private_key_material.py",
+          "sha256": "3ef5217a42846583a0d6124d8c5ffd17bd5e198693a1a64cb6f714f731bbc87e"
+        },
+        {
+          "path": "packaging/release/sign-release-artifacts.sh",
+          "sha256": "a1f5bc630a7dd8e1bb7d5a9a28d33b743a4d0d1b5c3daf6cd0e6444aac7714a9"
+        },
+        {
+          "path": "packaging/release/sign-update-manifest.py",
+          "sha256": "dd3e21c5cce162470f8594cf38b13217c5e56361c5cfe738d6f715de663a68e5"
+        },
+        {
+          "path": "packaging/release/prepare-release.py",
+          "sha256": "c85d07329b59cadaac6825057a08bb2a5e63cf99a24209f38c7f4162aa41f8f6"
+        },
+        {
+          "path": "packaging/tests/release-signing-test.sh",
+          "sha256": "c6fedacccf78d7f516510827ae32d99cfffd280db543731e3b566967a1482ae5"
+        },
+        {
+          "path": "packaging/tests/release-bundle-test.py",
+          "sha256": "527227fde9d55bcbb52652e4831cbc49ec89dc67b4a1a294589bf773a8c064e0"
+        },
+        {
+          "path": "packaging/release/update-compatibility-policy.json",
+          "sha256": "0fb049475b4a5e60337c894a69cf66da5da933f27a8d9408d4fe082add645303"
+        }
+      ]
+    }
+  },
+  "status": "Client, Debian, release/runtime, systemd/sysusers and Compose/template configuration extraction implemented. Packaging test ownership/configuration audit follows.",
+  "moves": [
+    "release/audit-nested-archive.py",
+    "release/private_key_material.py",
+    "release/sign-release-artifacts.sh",
+    "release/sign-update-manifest.py",
+    "release/prepare-release.py",
+    "tests/release-signing-test.sh",
+    "tests/release-bundle-test.py"
+  ],
+  "productInputs": [
+    "release/update-compatibility-policy.json"
+  ],
+  "verification": {
+    "auditFixtureParity": {
+      "archiveCases": 8,
+      "keyCases": 3,
+      "exitCodeStdoutStderrIdentical": true
+    },
+    "compatibilityCases": 7,
+    "releaseSigningSuites": {
+      "myscoutee-backend": "passed",
+      "myscoutee-template": "passed"
+    },
+    "completeBundleCases": {
+      "myscoutee-backend": {
+        "cases": 1,
+        "projectVariants": 2,
+        "passed": true
+      },
+      "myscoutee-template": {
+        "cases": 1,
+        "projectVariants": 2,
+        "passed": true
+      }
+    },
+    "prereleaseArtifactCase": {
+      "cases": 1,
+      "passed": true
+    },
+    "javaConsumerCases": {
+      "myscoutee-backend": 9,
+      "myscoutee-template": 9
+    },
+    "javaSuite": "integrationTest filtered to OperatorUpdateReleaseServiceTest; mocked HTTP and disposable local keys only",
+    "initialJavaFilter": "standardTest excluded this integration-tagged class; corrected suite selection without code/assertion changes",
+    "runtimeQualification": false
+  },
+  "removedStaleBytecode": [
+    "packaging/release/__pycache__/private_key_material.cpython-310.pyc",
+    "packaging/release/__pycache__/prepare-release.cpython-310.pyc",
+    "packaging/release/__pycache__/private_key_material.cpython-310.pyc",
+    "packaging/release/__pycache__/sign-update-manifest.cpython-310.pyc",
+    "packaging/release/__pycache__/prepare-release.cpython-310.pyc"
+  ],
+  "canonicalFiles": [
+    {
+      "path": "release/audit-nested-archive.py",
+      "sha256": "13bfa4246eecbb78695ee6bfb3df6a870c789d4b2c6e51f1d7b04de5a126b53c"
+    },
+    {
+      "path": "release/private_key_material.py",
+      "sha256": "3ef5217a42846583a0d6124d8c5ffd17bd5e198693a1a64cb6f714f731bbc87e"
+    },
+    {
+      "path": "release/sign-release-artifacts.sh",
+      "sha256": "cefbe9489eefc6739c570f7a710f83163f5f2c9911afdd529cf7acbd1206a5aa"
+    },
+    {
+      "path": "release/sign-update-manifest.py",
+      "sha256": "122bc3f3c5419261e381f27a0a6d35e72db06e05a0bdb7e1e6bcd87194108f1d"
+    },
+    {
+      "path": "release/prepare-release.py",
+      "sha256": "6323f8efb8128dcd4bc62851f42ce1469d1e39effaf838368c1c09cd4b42a228"
+    },
+    {
+      "path": "tests/release-signing-test.sh",
+      "sha256": "fe71fe8144f40574dfc05ef206e1075cb658f4f59d60b8f8002686650493c418"
+    },
+    {
+      "path": "tests/release-bundle-test.py",
+      "sha256": "da854ef1d12c0aff1318ab44eeac603a0132dd603bbac043c04f78e6a9e769c7"
+    }
+  ],
+  "clientTools": {
+    "package": "@fssrepository/myscoutee-packaging",
+    "version": "1.4.7-dev.5",
+    "consumers": [
+      "myscoutee-backend/config/packaging",
+      "myscoutee-template/config/packaging"
+    ],
+    "configuration": "Each application owns config/packaging/release-project.json, its client manifest, environment example and ignored local credentials.",
+    "documentation": "client-tools/README.md; includes the template initial-runtime-identity upgrade note.",
+    "sourceCopiesRemoved": true,
+    "proxyFilesCreated": false,
+    "adaptation": "Source/archive policy binding and dependency paths only; existing partial-update algorithms retained.",
+    "unchangedPartialUpdateFunctions": [
+      "env_setting",
+      "run_image",
+      "healthy_image",
+      "phase",
+      "rollback_saved"
+    ],
+    "files": [
+      {
+        "source": "packaging/client-tools/forward-localhost.sh",
+        "target": "client-tools/forward-localhost.sh",
+        "beforeSha256": "fc3254ecebe23ee3cdbd52f89b722debb7b4b0d011058e04518d57fdb434c115",
+        "afterSha256": "debbef9922dcf68a8dd740419eb89856dd740416e70eada7748c7f19c68c8603",
+        "byteIdentical": false
+      },
+      {
+        "source": "packaging/client-tools/install-temporary-frontend.sh",
+        "target": "client-tools/install-temporary-frontend.sh",
+        "beforeSha256": "55edbc9de42076e900aa8d0108b1b72965c0979c4764313746cadd3ac13049ff",
+        "afterSha256": "aa0df3f1f308c7ac94907bc1b0862eb3d7678c03512a9e816a9fb32b1983f3fa",
+        "byteIdentical": false
+      },
+      {
+        "source": "packaging/client-tools/install-temporary-image.sh",
+        "target": "client-tools/install-temporary-image.sh",
+        "beforeSha256": "a14f111ed47253ebf2161d2e371c366f2d5236d8028a8a18c8b2d44971d0fc14",
+        "afterSha256": "2f89e490b73401bb60557f529b893dd3dafd0d5bd63458323cd45aa34c8e02f7",
+        "byteIdentical": false
+      },
+      {
+        "source": "packaging/client-tools/install.sh",
+        "target": "client-tools/install.sh",
+        "beforeSha256": "90c992013e95735de01bc4eecce5005e924338e333a4dbc89e74508b7737e644",
+        "afterSha256": "812910ec5f73573706246ffe7ce5449cda539d910d087b4bd87c189b3afac18a",
+        "byteIdentical": false
+      },
+      {
+        "source": "packaging/client-tools/prepare-debian13-minimal.sh",
+        "target": "client-tools/prepare-debian13-minimal.sh",
+        "beforeSha256": "186d201d6cd8355121f65088dada7966e8f756993f0b083d6958f3887bea2ace",
+        "afterSha256": "186d201d6cd8355121f65088dada7966e8f756993f0b083d6958f3887bea2ace",
+        "byteIdentical": true
+      },
+      {
+        "source": "packaging/client-tools/purge.sh",
+        "target": "client-tools/purge.sh",
+        "beforeSha256": "48c8b3c8025b3f1942a1367c634ea61c42870481cdfef9bc5ce8f7ec1c62f72b",
+        "afterSha256": "09532a618d90fc0f8f9c202b4af030e991031e5354226d20e873b5ffd6ce0d48",
+        "byteIdentical": false
+      },
+      {
+        "source": "packaging/client-tools/remote-transport.sh",
+        "target": "client-tools/remote-transport.sh",
+        "beforeSha256": "64855146ebd0b1b2b8b2eb087b6b222b3c63eb2e9de4ce12e9d55dcebb854616",
+        "afterSha256": "64855146ebd0b1b2b8b2eb087b6b222b3c63eb2e9de4ce12e9d55dcebb854616",
+        "byteIdentical": true
+      },
+      {
+        "source": "packaging/client-tools/verify-release.sh",
+        "target": "client-tools/verify-release.sh",
+        "beforeSha256": "bc9e9e3852f1519554e2593924d87adb8f6df67f6f2aa079fc76748ea7c9326f",
+        "afterSha256": "bdc9bb9c802eafe50752796d9bf73f6e05d5ffc9281f993913effef235f7fd86",
+        "byteIdentical": false
+      }
+    ],
+    "validation": {
+      "packedPackageIsolation": "passed for backend and template outside the workspace",
+      "clientInstallTransportAndArchiveTests": "passed",
+      "partialUpdateCases": 26,
+      "originalBehaviourTraceCases": 24,
+      "dockerStateAndEnvironmentTraceDifferences": 0,
+      "backendInstalledPayloadDifferences": [
+        "packaging/scripts/release-project.sh",
+        "embedded client-tools archive"
+      ],
+      "imageFreeDebAssembly": "passed for both applications",
+      "releaseSigning": "passed for both applications",
+      "templateHostLifecycle": "passed; corrected stale nginx cache purge assertion and relocated policy fixture path",
+      "backendReleaseFixture": "passed in isolation using retained historical compatibility policy; the working-tree policy remains absent",
+      "kvmAndApplicationRuntime": "not run in this technical extraction step",
+      "cleanNpmCi": "passed in both applications using the same locked tarball integrity",
+      "backendUpdateWorker": "passed"
+    },
+    "archiveBuilder": {
+      "source": "packaging/release/package-client-tools.sh",
+      "target": "release/package-client-tools.sh",
+      "beforeSha256": "2b0be3ee7f8a2e8dc16f54323ded1f8c24df8e25ad2cef930a21a05346724ad8",
+      "afterSha256": "dcb4399b33ceb8eee1d816807ea97e484711e90f58e984d0e4fcfd1780f9e714",
+      "adaptation": "Reads scripts/documentation from the installed dependency and project data from the selected config/packaging directory."
+    }
+  },
+  "debian": {
+    "packageVersion": "1.4.7-dev.7",
+    "sources": {
+      "myscoutee-backend": {
+        "revision": "c0c9ceefdd192779534f42b2c564b5d30148ddfd",
+        "files": {
+          "postrm": "e9c8a921bb5ccc99dd53074ae9cf25f2bfc27043baa157c9c6f17bdaafadb01b",
+          "prerm": "8f4778280f239e9a129bc7451e763e2e23acab87e61683571d5e681d0dc6d15f",
+          "preinst": "5ef094d485b72c5f18bf91ef8c82c5c8f17afffcf5c07aa421f1a0f8e7425523",
+          "postinst": "180fcdb9a02c59f7aae42ff63dd087b0159d693115aa1de5feab389fc3628fa3",
+          "control": "95613ae99a094103c8838a2d4f471d873dc06189ffe7e4213d70acc4988599cd"
+        }
+      },
+      "myscoutee-template": {
+        "revision": "14cf9fa606d8546ff0b66eb93d38d6cdc65a3e96",
+        "files": {
+          "postrm": "845e6b3c07be09db467b0f6a6b7d83955c333aa259a6974f698a6affaaf35397",
+          "prerm": "8f4778280f239e9a129bc7451e763e2e23acab87e61683571d5e681d0dc6d15f",
+          "preinst": "014803a626cb3ce7af7a1671f91446e97ac972a371a188be9283916aab166b5a",
+          "postinst": "180fcdb9a02c59f7aae42ff63dd087b0159d693115aa1de5feab389fc3628fa3",
+          "control": "575ddd0b3a73c457461959952a743ba1a40c415161834762fbf49bad25491561"
+        }
+      }
+    },
+    "canonicalFiles": [
+      {
+        "path": "debian/control",
+        "sha256": "13191e91c2c3aee67341eb9ad63ca66cce202c1797a5c10ff77d5008225e02a5"
+      },
+      {
+        "path": "debian/defaults.json",
+        "sha256": "02e592e8dff5c3ca29a1e142b9c140168cc1496fc55b1cb0b23dfd0f0e07a6b6"
+      },
+      {
+        "path": "debian/postinst",
+        "sha256": "6f1bb0e5ded6da8467d24cf889434e7741958d8daee443a04bf640284c833dad"
+      },
+      {
+        "path": "debian/postrm",
+        "sha256": "c778077a4819580ecc4f4def0ce50d7d175a712e0d503ebc90c71d30bbbe5205"
+      },
+      {
+        "path": "debian/preinst",
+        "sha256": "454a1562d6478610581d9d16a6e46c7072dbe7fb3859c6b4d430d3d04ca59c78"
+      },
+      {
+        "path": "debian/prerm",
+        "sha256": "8f4778280f239e9a129bc7451e763e2e23acab87e61683571d5e681d0dc6d15f"
+      },
+      {
+        "path": "release/render-debian.py",
+        "sha256": "8f865cde5099235f9d5982593903d3ae8beeb5a242db4b01f0de32e1743c0fe5"
+      }
+    ],
+    "productConfiguration": [
+      "config/packaging/debian/control.json",
+      "config/packaging/debian/purge-policy.json",
+      "config/packaging/release-project.json"
+    ],
+    "optionalOverrides": "config/packaging/debian/lifecycle.json; selected fields override the shared Debian defaults at build time",
+    "migrationInputs": {
+      "myscoutee-backend": 38,
+      "myscoutee-template": 14,
+      "source": "config/packaging/migrations",
+      "installed": "/opt/<package>/packaging/migrations",
+      "byteIdentical": true
+    },
+    "sourceCopiesRemoved": true,
+    "proxyFilesCreated": false,
+    "validation": {
+      "originalRenderedControlFiles": {
+        "products": 2,
+        "filesPerProduct": 5,
+        "byteDifferences": 0
+      },
+      "sharedConfigurationTests": 7,
+      "packedDependencyIsolation": "passed for both products including all five original Debian file hashes",
+      "cleanNpmCi": "passed in both products with the same locked tarball integrity",
+      "focusedSuites": [
+        "backend Debian TLS",
+        "backend remove/purge",
+        "backend and template numeric ownership",
+        "backend and template install policy",
+        "backend and template runtime identity migration in disposable containers",
+        "backend postinst image policy",
+        "backend Operator bootstrap",
+        "template host lifecycle with command doubles",
+        "backend partial-release input validation",
+        "backend Registry packaging"
+      ],
+      "artifactAssembly": "passed: both image-free 1.0.0/amd64 DEBs, all installed bytes and control files compared with assembly, all migration inputs compared with original hashes",
+      "registryTestCorrection": "Replaced stale 1.3.0 image expectations with explicit candidate image configuration for Compose rendering; production configuration unchanged",
+      "kvmAndApplicationRuntime": "not run in this technical packaging extraction",
+      "partialReleaseAssembly": "passed: all 38 original migration inputs and complete staged SHA256 inventory"
+    }
+  },
+  "releaseConfiguration": {
+    "packageVersion": "1.4.7-dev.9",
+    "sourceBaseline": {
+      "myscoutee-backend": {
+        "revision": "7c732dad4dba8fc28c1cc890e09c0d9649bb42df",
+        "files": {
+          "audit-package-credentials.sh": "f738b04fbc541b4c58eeef3dbddec84a0037fba63f9875971e293649e94726ba",
+          "package-production.sh": "1e7f739f376887508c601960c4d4d727516aa43f18e1f051b633c9a2e4d36a23",
+          "apply-partial-release-data.sh": "84ad4364a2e51a4d502c5841f5a27cecd98e3b7ce27f1db0889c105064b2d8d2",
+          "README.md": "f33e5ab16c3c30852ca66d78c691e8947dd0846b79d6e898613e5d758e4b752b",
+          "rebuild-production-services.sh": "8a6f1c039ce6f8db5b06efccc4cfccf3c4587c49d6f5e522a64c4bdea1077e18",
+          "qualify-release-artifacts.sh": "cda35f198c55c95c5c7142b661fed0fbea16ac2844a474a1af27388562748f53",
+          "publish-images.sh": "96a67ba970c9563030a80ac8a54df0ea9208b6073940926b841ff7af59e89ff9",
+          "audit-project-seeds.sh": "36ba7f5f7ca087a149fe5a0b42d3c93ee3ecadcb715fa07832c90384eff7a5cb",
+          "build-production.sh": "bb5b6165beabfdc86e4d885517965a9a6e1383f561b007281df851d59c6bffad",
+          "package-partial-release-data.sh": "7be17c79db5ec382330200caa9d0910b0a426dda54599b12c8ebb7f6b20a53b2",
+          "build-debian-release.sh": "4099fd64a3db5954bf58ac5be3210d106a09f29f424e654d8c19e15955a0c71b",
+          "render-nginx-routes.py": "71142c559ecb484440f620130435f2a8708a7d448a6ebd8a950738e58d676c5e",
+          "runtime-scripts.json": "89441f920c5cdeed69ef129af458d9cddbda546d2f4462ad7a913cc42c18bf1b"
+        }
+      },
+      "myscoutee-template": {
+        "revision": "89b7bd7c7cb112cfa093484a4ea82d7cfa7e74e5",
+        "files": {
+          "audit-package-credentials.sh": "f738b04fbc541b4c58eeef3dbddec84a0037fba63f9875971e293649e94726ba",
+          "package-production.sh": "ba83c9c2c7c8f693b6910b807abde9904cc5544aa609b237b939b0ae080af649",
+          "README.md": "3b4c4dd7e100e2c4d73db3baea132868fe1191a8f332549207300e9003386529",
+          "publish-images.sh": "96a67ba970c9563030a80ac8a54df0ea9208b6073940926b841ff7af59e89ff9",
+          "audit-project-seeds.sh": "ba99d500c34d3e559f0a673d74ffa2e1565035a8fcb5f938ed3ee86601f6130f",
+          "build-production.sh": "bb5b6165beabfdc86e4d885517965a9a6e1383f561b007281df851d59c6bffad",
+          "release-public.pem": "8d184110f5fdec1a0b79cb02bfa59c8389088dd041955e3a04c18a90ec5e55c3",
+          "render-nginx-routes.py": "71142c559ecb484440f620130435f2a8708a7d448a6ebd8a950738e58d676c5e",
+          "runtime-scripts.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+        }
+      }
+    },
+    "sharedDefaults": "release/defaults.json",
+    "projectOverrides": "config/packaging/release/settings.json",
+    "movedInputs": [
+      "config/packaging/release/runtime-scripts.json",
+      "config/packaging/release/seed-audits.json",
+      "config/packaging/release/seed-audits/*.jq",
+      "myscoutee-template/config/packaging/release/release-public.pem"
+    ],
+    "reusedOwners": [
+      "config/packaging/release-project.json for package/runtime/image identity",
+      "Debian lifecycle configuration for official-image defaults"
+    ],
+    "canonicalFiles": [
+      {
+        "path": "release/defaults.json",
+        "sha256": "f5d62941195ec9566f60497104cc530a214e9f9efc1f7c67f725f09f7c665802"
+      },
+      {
+        "path": "release/release-config.sh",
+        "sha256": "88d4e565147e6e4ee21fb78c6aca1d1a5a3d8f9bc25a7f33cf42a494f77d9740"
+      },
+      {
+        "path": "release/audit-project-seeds.sh",
+        "sha256": "4a4ad818856e6e1bb0f7432f2f3d6954c41672d911d2f8d37e42bc6bdd8330c9"
+      },
+      {
+        "path": "release/render-social-filters.py",
+        "sha256": "df754bf6f52279a9f1234de7d469d4eaf27327c097d4cd53fb5ed4563d1a4be4"
+      },
+      {
+        "path": "release/audit-nested-archive.py",
+        "sha256": "13bfa4246eecbb78695ee6bfb3df6a870c789d4b2c6e51f1d7b04de5a126b53c"
+      },
+      {
+        "path": "release/package-client-tools.sh",
+        "sha256": "1000ab6e24f098ce97f3aed34a3d60d255e7689dbc5ac4b449d14437808477db"
+      }
+    ],
+    "verification": {
+      "originalCommandTracePairs": 10,
+      "originalSeedAuditCases": 7,
+      "originalCredentialAuditCases": 8,
+      "configuredBuildRegistryAndSocialOverrides": "passed for both products",
+      "releaseConfigurationUnitTests": 5,
+      "debianGoldenTests": 7,
+      "packedDependencyIsolation": "passed for both products",
+      "cleanLockedNpmCi": "passed for both products",
+      "partialInputRejectionTests": 8,
+      "completePartialApplicationTrace": "identical to original including backup, database passes, installed paths and systemd patch; all host-changing commands doubled",
+      "qualificationFixture": "identical original/new evidence and rejection for wrong registry user/port; synthetic packages and mocked Docker only",
+      "imageFreeDebArtifacts": {
+        "myscoutee-backend": 235,
+        "myscoutee-template": 100,
+        "description": "All payload/control bytes and modes identical to pre-extraction artifacts; actual DEBs compared with complete staging inventories"
+      },
+      "partialRelease": "All original seed/media/migration bytes retained; selected partial-data.json embedded; full staged checksums passed",
+      "kvmApplicationRuntimePublication": "not run in this source/config extraction"
+    }
+  },
+  "runtimeAndReleaseTools": {
+    "packageVersion": "1.4.7-dev.19",
+    "sourceBaseline": {
+      "myscoutee-backend": {
+        "backup-production.sh": "4f8e4d2bf07ae511fa5b7cc3149d537f0e9a96189f8b104aa2c657ca5d233e12",
+        "deployment-diagnostics.sh": "82f69d3b50581760358633a574cc90efe9eb423f1f28ba008b6f9ca5b41ed8b3",
+        "doctor-production.sh": "60fdb93ad1eb1a17f37eb9b4bd5da1d8c28d3f8a3299172ec797cd529eb43f90",
+        "ensure-deployment-identity.sh": "7090c23af2ef46ed75aefd05bdb2de755b25103f154b6acf184dac8d80f08434",
+        "ensure-operator-bootstrap.sh": "9b1dff25c169354a3819aa9e6326ad2326a92aa10a2d33e2ab49742a40a9a70a",
+        "ensure-operator-configuration-key.sh": "3a6b69b3226dd1dc0345577bcfddcdb29e8761cc1b00ae67a47823a312913823",
+        "host-project-checks.sh": "020454f52f7315197df5c6750815bab9c114aadd03a7add85c3ede8aaf1d06b1",
+        "image-content-fingerprint.sh": "92bd04a5af26d7312cf2bad37168d50018969ad785b3da56633b8af9b0f4ce0d",
+        "install-vps-prerequisites.sh": "ac083db5550fd36dcb7564159b7892e3c9da00e49ef245135f8a862f87195530",
+        "migrate-production-data.sh": "1b9f4ea27f88e92d7f4c2a19e965bb95556559d3f62ed8329874a4142c9fd9d2",
+        "migrate-seeded-media.py": "4e44497b997debe1d8cf6aa8e82c88ed18c942e021f2661c9683e67853c5414e",
+        "myscoutee-compose.sh": "82a390a38c2b156a9acee83b3e59d5a27a5f803e5ae9ac4e5b109167f1aa7566",
+        "myscoutee-safe-copy.py": "5478ec9fe93f5eb264e115dac3932ec6d9c0b5dc7f55cc81bf2bc6445bfc71c1",
+        "myscoutee-tls-worker.sh": "a033f49ce1e0b08af8740e934d3545f3f2b334c2e3685c1bbe01c4fdd4e32bbc",
+        "myscoutee-update-worker.sh": "d80a50fbaca103d20a797028e36500c1f7ebb29bd1ce5c4827919f8851319aaa",
+        "patch-facebook-coming-soon.sh": "8b34d6da2bf1478b24a2cdfd0702bec0b1f6e5ebe54a4eb76b7445833e53a7ad",
+        "qualify-deployment.sh": "d7dfe52e9919d8a0199ad5030bbbb98932ac6a06115093a7ba05c13358216d30",
+        "record-installed-package.sh": "9410e06a665ae567272c357da961c3445507839012c31eee5ed8921ea97974d6",
+        "recovery-project.sh": "a82240a4f75467aaea1eb34638d89b8517f7e181795b542bc00ce849d3b12b03",
+        "release-project.sh": "69908f803358d52627a4e978c044b20955d370dc147853b4efe5b226f6452842",
+        "release-system-seeds.json": "9ce1436c467340cb01effb3a45943160691f94573e66e25e3eb518211549b05f",
+        "reset-demo-state.sh": "8aebc9e8179dcae222f4074bc3c95daf64fd07607a551af63be6c2dc89ab4b8c",
+        "restart-update-stack.sh": "40e841fca0994e780e64030a86161c8efec39205bf079252dc9ea03694d57eda",
+        "restore-production.sh": "77d01a004f79ba7c39dd4b85cb84cb27f9dbc2f9c01ae9b29e8c70f7e8703f14",
+        "run-data-migrations.js": "4135f85bd0c13b36a7b53e43cdb5e47fdb49a7257a7cc5fb0ab93f583b53f408",
+        "smoke-mongo-compatibility.sh": "8103288a79971b48d65f4ce22e6995dbb4e6f0ba0f7ccf893d1807d886783880",
+        "start-production.sh": "726f3ecf080824d63232a6c025d8c6dafe8236ee5d5e2050e26d679d94300d9a",
+        "status-production.sh": "729435003ad36495ebef0604dac2f11173284f914063c79bf2bc2f9337694299",
+        "stop-production.sh": "bf9ce9dea5943b4160f5a50c4bf622befe2339c137e90eabcbff6d3f8423a5de",
+        "sync-i18n-seeds.sh": "c4a5f7cd3639c38245fe6a621d1f3d106d6b4b74c9f526d430d083aa581b8775",
+        "sync-release-system-seeds.js": "f2b56bfe0b95c78efee230638a1b20be5308d1243f713fda4dd16d3b63147a92",
+        "update-status-server.py": "e820fdfae2b1b6435046624f344d9c3f3271443b21d08e4329e21ad08a912a2b",
+        "validate-registry-state.jq": "72851ddcb8082f4d27b5c8e8f11a7435d3e26deb9729e11729b153051b8dfe08"
+      },
+      "myscoutee-template": {
+        "backup-production.sh": "4f8e4d2bf07ae511fa5b7cc3149d537f0e9a96189f8b104aa2c657ca5d233e12",
+        "deployment-diagnostics.sh": "82f69d3b50581760358633a574cc90efe9eb423f1f28ba008b6f9ca5b41ed8b3",
+        "ensure-operator-bootstrap.sh": "9b1dff25c169354a3819aa9e6326ad2326a92aa10a2d33e2ab49742a40a9a70a",
+        "ensure-operator-configuration-key.sh": "3a6b69b3226dd1dc0345577bcfddcdb29e8761cc1b00ae67a47823a312913823",
+        "host-project-checks.sh": "2ad2a61318aa13c91c58ce0e78520b05f9d45bb9d052b79279094b41242fdb95",
+        "image-content-fingerprint.sh": "92bd04a5af26d7312cf2bad37168d50018969ad785b3da56633b8af9b0f4ce0d",
+        "migrate-production-data.sh": "e1a7108b55676b2609e7d950be1f73691a69f09304e6cb6520aa88a5a4acaa4e",
+        "myscoutee-compose.sh": "82a390a38c2b156a9acee83b3e59d5a27a5f803e5ae9ac4e5b109167f1aa7566",
+        "myscoutee-safe-copy.py": "5478ec9fe93f5eb264e115dac3932ec6d9c0b5dc7f55cc81bf2bc6445bfc71c1",
+        "myscoutee-tls-worker.sh": "a033f49ce1e0b08af8740e934d3545f3f2b334c2e3685c1bbe01c4fdd4e32bbc",
+        "myscoutee-update-worker.sh": "d80a50fbaca103d20a797028e36500c1f7ebb29bd1ce5c4827919f8851319aaa",
+        "qualify-deployment.sh": "d7dfe52e9919d8a0199ad5030bbbb98932ac6a06115093a7ba05c13358216d30",
+        "record-installed-package.sh": "9410e06a665ae567272c357da961c3445507839012c31eee5ed8921ea97974d6",
+        "recovery-project.sh": "80fef6781830edfeb8403eb074011705de52bb2eebe39baa3c972d445b64939c",
+        "release-project.sh": "69908f803358d52627a4e978c044b20955d370dc147853b4efe5b226f6452842",
+        "release-system-seeds.json": "2fab61c7db8008cab5cb4f0c4b08daa895a5c5ca717f592f5b21a7ec39799ee5",
+        "reset-demo-state.sh": "8aebc9e8179dcae222f4074bc3c95daf64fd07607a551af63be6c2dc89ab4b8c",
+        "restart-update-stack.sh": "40e841fca0994e780e64030a86161c8efec39205bf079252dc9ea03694d57eda",
+        "restore-production.sh": "77d01a004f79ba7c39dd4b85cb84cb27f9dbc2f9c01ae9b29e8c70f7e8703f14",
+        "run-data-migrations.js": "4135f85bd0c13b36a7b53e43cdb5e47fdb49a7257a7cc5fb0ab93f583b53f408",
+        "smoke-mongo-compatibility.sh": "8103288a79971b48d65f4ce22e6995dbb4e6f0ba0f7ccf893d1807d886783880",
+        "start-production.sh": "726f3ecf080824d63232a6c025d8c6dafe8236ee5d5e2050e26d679d94300d9a",
+        "status-production.sh": "729435003ad36495ebef0604dac2f11173284f914063c79bf2bc2f9337694299",
+        "stop-production.sh": "bf9ce9dea5943b4160f5a50c4bf622befe2339c137e90eabcbff6d3f8423a5de",
+        "sync-i18n-seeds.sh": "c4a5f7cd3639c38245fe6a621d1f3d106d6b4b74c9f526d430d083aa581b8775",
+        "sync-release-system-seeds.js": "f2b56bfe0b95c78efee230638a1b20be5308d1243f713fda4dd16d3b63147a92",
+        "update-status-server.py": "e820fdfae2b1b6435046624f344d9c3f3271443b21d08e4329e21ad08a912a2b"
+      }
+    },
+    "selection": "config/packaging/runtime-inputs.json",
+    "canonicalSources": {
+      "backup-production.sh": "runtime/recovery/backup-production.sh",
+      "deployment-diagnostics.sh": "verification/deployment-diagnostics.sh",
+      "doctor-production.sh": "verification/doctor-production.sh",
+      "ensure-deployment-identity.sh": "runtime/host/ensure-deployment-identity.sh",
+      "ensure-operator-bootstrap.sh": "runtime/host/ensure-operator-bootstrap.sh",
+      "ensure-operator-configuration-key.sh": "runtime/host/ensure-operator-configuration-key.sh",
+      "image-content-fingerprint.sh": "release/lib/image-content-fingerprint.sh",
+      "install-vps-prerequisites.sh": "client-tools/install-vps-prerequisites.sh",
+      "migrate-seeded-media.py": "runtime/data/migrate-seeded-media.py",
+      "myscoutee-compose.sh": "compose/myscoutee-compose.sh",
+      "myscoutee-safe-copy.py": "runtime/update/myscoutee-safe-copy.py",
+      "myscoutee-tls-worker.sh": "runtime/host/myscoutee-tls-worker.sh",
+      "myscoutee-update-worker.sh": "runtime/update/myscoutee-update-worker.sh",
+      "qualify-deployment.sh": "verification/qualify-deployment.sh",
+      "record-installed-package.sh": "runtime/update/record-installed-package.sh",
+      "release-project.sh": "release/lib/release-project.sh",
+      "reset-demo-state.sh": "runtime/data/reset-demo-state.sh",
+      "restart-update-stack.sh": "runtime/update/restart-update-stack.sh",
+      "restore-production.sh": "runtime/recovery/restore-production.sh",
+      "run-data-migrations.js": "runtime/data/run-data-migrations.js",
+      "smoke-mongo-compatibility.sh": "verification/smoke-mongo-compatibility.sh",
+      "start-production.sh": "runtime/host/start-production.sh",
+      "status-production.sh": "runtime/host/status-production.sh",
+      "stop-production.sh": "runtime/host/stop-production.sh",
+      "sync-i18n-seeds.sh": "runtime/data/sync-i18n-seeds.sh",
+      "sync-release-system-seeds.js": "runtime/data/sync-release-system-seeds.js",
+      "update-status-server.py": "runtime/update/update-status-server.py",
+      "validate-registry-state.jq": "runtime/host/validate-registry-state.jq",
+      "recovery-project.sh": "runtime/recovery/recovery-project.sh",
+      "migrate-production-data.sh": "runtime/data/migrate-production-data.sh",
+      "patch-facebook-coming-soon.sh": "runtime/host/patch-facebook-coming-soon.sh"
+    },
+    "projectInputs": [
+      "config/packaging/host-project-checks.sh",
+      "config/packaging/release/release-system-seeds.json",
+      "myscoutee-backend/config/packaging/templates/facebook-coming-soon.html",
+      "config/packaging/release-project.json.hostTools"
+    ],
+    "runtimeConfiguration": [
+      "Registry key/state paths and numeric identity",
+      "startup fallback version",
+      "TLS application URL environment selections and local origin list",
+      "migration-settings.json sourced from existing release/settings.json"
+    ],
+    "sourceDirectoriesRemoved": [
+      "myscoutee-backend/packaging/scripts",
+      "myscoutee-template/packaging/scripts",
+      "myscoutee-backend/packaging/release",
+      "myscoutee-template/packaging/release"
+    ],
+    "sourceView": "build/scripts: generated exact source bytes, not checked-in forwarding files",
+    "installedContract": "Existing /opt/<package>/packaging/scripts paths and filenames; backend additionally carries its extracted Facebook patch input",
+    "verification": {
+      "packedPackageIsolation": "passed for both projects including all selected runtime files",
+      "sharedConfigurationTests": {
+        "release": 5,
+        "debian": 7,
+        "runtime": 4
+      },
+      "originalMigrationCommandTraces": "identical for both projects including optional MinIO branch",
+      "originalFacebookPatch": "identical output for application, idempotence and removal",
+      "focusedSuites": [
+        "both numeric ownership",
+        "both TLS",
+        "both demo reset",
+        "both Compose Firebase paths",
+        "both release seed selection",
+        "backend Registry packaging",
+        "backend Operator bootstrap",
+        "backend update worker",
+        "backend restart stack",
+        "backend update status",
+        "backend deployment qualification",
+        "backend client commands and reproducible archive",
+        "template host lifecycle",
+        "8 partial input rejection cases",
+        "seeded-media unit tests",
+        "release signing and complete bundle with disposable keys/packages"
+      ],
+      "imageFreeDebArtifacts": {
+        "myscoutee-backend": {
+          "originalServiceAndAccountFiles": 10,
+          "originalServiceAndAccountByteDifferences": 0,
+          "sourceComposeFiles": 3,
+          "sourceComposeByteDifferences": 0,
+          "payloadAndControlFiles": 237,
+          "actualDebMatchesStage": true,
+          "newMigrationConfiguration": [
+            "opt/myscoutee/packaging/scripts/migration-settings.json"
+          ],
+          "otherChangedFiles": [
+            "opt/myscoutee/packaging/scripts/migrate-production-data.sh",
+            "opt/myscoutee/packaging/scripts/release-project.json",
+            "usr/share/myscoutee/myscoutee-client-tools_1.0.0.tar.gz"
+          ]
+        },
+        "myscoutee-template": {
+          "originalServiceAndAccountFiles": 10,
+          "originalServiceAndAccountByteDifferences": 0,
+          "sourceComposeFiles": 3,
+          "sourceComposeByteDifferences": 0,
+          "payloadAndControlFiles": 101,
+          "actualDebMatchesStage": true,
+          "newMigrationConfiguration": [
+            "opt/myscoutee-template/packaging/scripts/migration-settings.json"
+          ],
+          "otherChangedFiles": [
+            "opt/myscoutee-template/packaging/scripts/migrate-production-data.sh",
+            "opt/myscoutee-template/packaging/scripts/release-project.json",
+            "usr/share/myscoutee-template/myscoutee-template-client-tools_1.0.0.tar.gz"
+          ]
+        }
+      },
+      "mongoDependentSeededImageTest": "not qualified: existing mongodb container stopped; no database or VM started",
+      "applicationVmOrPublication": "not run",
+      "partialInputRejectionCases": 9,
+      "legacyInstalledMigrationPolicy": "Original/new/legacy-policy command traces identical for both projects",
+      "unavailableMongoChecks": [
+        "seeded image integration",
+        "exchange-rate integration"
+      ]
+    }
+  },
+  "serviceManager": {
+    "packageVersion": "1.4.7-dev.19",
+    "sourceHashes": {
+      "myscoutee-backend": {
+        "systemd": {
+          "myscoutee-update-status.socket": "ba01b653cef09dc4465037760f4ef0e695a55450ea85e2fbd2521bc6887d3c63",
+          "myscoutee-tls.service": "6964389ae10d9e09276d262070192822064be3416a2372040fa2d58340ac0eb0",
+          "myscoutee-update-status.service": "097a1214235a58e98847b1e27765f5e241d25e06824916aca328786c721681d8",
+          "myscoutee-update.path": "14a0fb7dbed7c980fca4772c8145c179eee6c94f8ea93da59ae8e72570a3580d",
+          "myscoutee.service": "208075bf8acd4915c263c0fe1430d6503e6db74bf5ded63a96c6d9ba156ea432",
+          "myscoutee-tls-renew.timer": "48fbcbeffd4e23f0b4b9ef7847044a924053026e8a662f2dc5c13376daa66f3c",
+          "myscoutee-update.service": "0cc8d4c547dba4b91781eae5d454d775871a6d997fc16a55568f35b95665c358",
+          "myscoutee-tls-renew.service": "8c5a136ccf460d947f7b6845b81c627b366c83b3229ace9f1e19e5928690cc60",
+          "myscoutee-tls.path": "c6018f5b87e376f6860d67fedea3fa6182ec844881ea20f82c77db15be55c59b"
+        },
+        "sysusers": {
+          "myscoutee.conf": "ecf9f09708bb2779c98fa5e9224c654f86c9d8eb425452e7290a35c5bcf71495"
+        }
+      },
+      "myscoutee-template": {
+        "systemd": {
+          "myscoutee-template-update-status.service": "44eed98189ce24fded009f3c9319b193fd31c735ed4ade8326ed0ad2c50dc513",
+          "myscoutee-template.service": "d86662d5720083210199550fcaa25fb4b9efb6a4c93c7933714b7a1347f17789",
+          "myscoutee-template-tls-renew.timer": "04e2e5ee1fa245e7a904ab8e3531409c366facae041fa5bc9c5babab2cfdb014",
+          "myscoutee-template-tls.path": "d86f5c0107712d30e258983d85b78fd5ccde635708f9c7bc86b39ccf82a905dd",
+          "myscoutee-template-update.path": "14eae45d56d7342692bb8d6af83ccbd7d157374b0aaed5f946d1353015d22b5f",
+          "myscoutee-template-tls.service": "0cd4ba5b6c42c5e52ffc1bc425e677e66ad4c8ed43055c61fcbe929eed5235cb",
+          "myscoutee-template-tls-renew.service": "b638c7fa293c46f1025719266e68941147298957dceeb79b9f1890291c31c717",
+          "myscoutee-template-update.service": "c364e4e839fda5dfb9566f06a99a0644596f3cb090b5f767d05be600226fb7f5",
+          "myscoutee-template-update-status.socket": "763498fdbded428dcc22221f456926c4de529a85840bd58181342e4ba69bf332"
+        },
+        "sysusers": {
+          "myscoutee-template.conf": "7239c96153a6b08626b6d155342df9d34557e1caadc5a801f04fb5539277d9c4"
+        }
+      }
+    },
+    "projectDisplayConfiguration": "config/packaging/systemd.json",
+    "existingIdentityOwner": "config/packaging/release-project.json",
+    "originalRenderedFiles": 20,
+    "byteDifferences": 0,
+    "nonExecutableModesPreserved": true,
+    "numericOwnershipTests": "passed for both projects; disposable sysusers roots only"
+  },
+  "composeConfiguration": {
+    "source": "config/packaging/compose",
+    "originalFileHashes": {
+      "myscoutee-backend": {
+        "docker-compose-stun.yml": "31c9887d769ddd48bc58f0e5c98503534c2606ffa199d8169820577e5fe88e53",
+        "docker-compose.production.yml": "aa506160e9e7a9a84377616daa5724d99b7be93f6701a82797a2ddca89abf2f5",
+        "docker-compose.production-replicaset.yml": "da2a366bcc37830ab9e7b5167049d55630efb91d1b517906599df14cf963b4df"
+      },
+      "myscoutee-template": {
+        "docker-compose-stun.yml": "31c9887d769ddd48bc58f0e5c98503534c2606ffa199d8169820577e5fe88e53",
+        "docker-compose.production.yml": "fa3eb7febc25e071ffdad7e0d94e38edf62651942a7329f5fa9056a01f996d4b",
+        "docker-compose.production-replicaset.yml": "7cf60f2906ae97bbcee75810a6b25aedccc955604a8b07f2c455a194f3b73a91"
+      }
+    },
+    "byteDifferences": 0,
+    "oldDirectoriesRemoved": true,
+    "installedServerFilenamesUnchanged": true
+  },
+  "deploymentTemplates": {
+    "source": "config/packaging/templates",
+    "files": {
+      "myscoutee-backend": {
+        "myscoutee.env": "ee4bc8ccb65085e2ccf48a2d78ced973cec3fe0cb3e834bb0298a1d941ab65e8",
+        "update-release-key.README": "d67deaa4949d450c011f07c2ddd450157d650f512d9d187d5cd91c645ed30a0b",
+        "install-policy.json": "9ddc7d4400c689ee5427a3c2bee0412692084f4b3d84a69ccd12b2e41a4f48af",
+        "myscoutee.secrets.env": "2e06ec20c3886a86ccc0f90e2c2a21b15a83a248e631aa8b00a489cf7d2fddd0"
+      },
+      "myscoutee-template": {
+        "update-release-key.README": "fdd347a8e9b27dfae2c588dab829ea12630f3fa89bee35cff5da90ba09bee966",
+        "myscoutee-template.secrets.env": "c8bccb7c8caa5fdb5ba911ebbd1a5d7ed1a44a182d3c702956b7d6bdb017075e",
+        "install-policy.json": "c1e537469c4fd6e5fda56404c38b581a6d218da7d08d4265d3b74347cd115e57",
+        "myscoutee-template.env": "f67c129ff4bfbd1ffeb095dc531c003c97337645cc91756d88887c72a044cad4"
+      }
+    },
+    "role": "Product environment/secret placeholders, install policy and installed key instructions; shared builder selects the four original delivery inputs",
+    "verification": {
+      "myscoutee-backend": {
+        "originalInputs": 4,
+        "sourceDifferences": 0,
+        "payloadAndControlFiles": 237,
+        "payloadOrModeDifferences": 0,
+        "actualDebMatchesStage": true,
+        "oldSourceDirectoryRemoved": true
+      },
+      "myscoutee-template": {
+        "originalInputs": 4,
+        "sourceDifferences": 0,
+        "payloadAndControlFiles": 101,
+        "payloadOrModeDifferences": 0,
+        "actualDebMatchesStage": true,
+        "oldSourceDirectoryRemoved": true
+      }
+    }
+  },
+  "currentSequence": [
+    {
+      "step": 1,
+      "task": "Finish runtime/release configuration and grouping",
+      "status": "complete"
+    },
+    {
+      "step": 2,
+      "task": "Share systemd/sysusers templates and isolate configuration",
+      "status": "complete"
+    },
+    {
+      "step": 3,
+      "task": "Relocate Compose and deployment-template data without changing installed payloads",
+      "status": "complete"
+    },
+    {
+      "step": 4,
+      "task": "Audit both packaging/tests directories, separate project configuration/test inputs from shared mechanisms, then group and extract the common tests",
+      "status": "complete"
+    },
+    {
+      "step": 5,
+      "task": "Extract public deployment verification and split documentation; remove empty application packaging directories while retaining all artifacts",
+      "status": "complete"
+    },
+    {
+      "step": 6,
+      "task": "Inspect the full Registry packaging tree, plan configuration boundaries, then integrate common mechanisms",
+      "status": "complete"
+    }
+  ],
+  "consumerTests": {
+    "selection": "config/packaging/tests/selection.json",
+    "caseConfiguration": "config/packaging/tests/release-project.json",
+    "commonCases": [
+      "tests/consumer/client/client-tools-package-test.sh",
+      "tests/consumer/client/client-tools-test.sh",
+      "tests/consumer/client/container-client-tools-test.sh",
+      "tests/consumer/client/temporary-frontend-test.py",
+      "tests/consumer/debian/container-debian-removal-contract-test.sh",
+      "tests/consumer/debian/debian-removal-contract-test.sh",
+      "tests/consumer/debian/debian-tls-lifecycle-test.sh",
+      "tests/consumer/debian/install-policy-test.py",
+      "tests/consumer/debian/numeric-ownership-policy-test.sh",
+      "tests/consumer/debian/operator-bootstrap-test.sh",
+      "tests/consumer/debian/postinst-image-policy-test.sh",
+      "tests/consumer/debian/runtime-identity-migration-test.py",
+      "tests/consumer/deployment/compose-firebase-path-test.sh",
+      "tests/consumer/deployment/compose-project-migration-test.py",
+      "tests/consumer/deployment/container-nginx-image-contract-test.sh",
+      "tests/consumer/deployment/container-verify-deployment-test.sh",
+      "tests/consumer/deployment/deployment-http-test.mjs",
+      "tests/consumer/deployment/deployment-input-parity-test.py",
+      "tests/consumer/deployment/deployment-qualification-test.sh",
+      "tests/consumer/deployment/dev-runtime-directories-test.py",
+      "tests/consumer/deployment/nginx-native-test.py",
+      "tests/consumer/deployment/registry-packaging-test.sh",
+      "tests/consumer/mongo/catalogs/ui-translation-key-migration-test.mjs",
+      "tests/consumer/mongo/indexes/integration-indexes-test.py",
+      "tests/consumer/mongo/mongo-import-entrypoint-test.sh",
+      "tests/consumer/mongo/release/release-seed-selection-test.mjs",
+      "tests/consumer/mongo/seed-singleton-preservation-test.py",
+      "tests/consumer/release/container-docker-build-context-test.sh",
+      "tests/consumer/release/container-package-contract-test.sh",
+      "tests/consumer/release/package-content-test.py",
+      "tests/consumer/release/package-content-test.sh",
+      "tests/consumer/release/partial-release-data-inputs-test.py",
+      "tests/consumer/release/release-project-test.sh",
+      "tests/consumer/release/update-manifest-compatibility-test.py",
+      "tests/consumer/runtime/demo-reset-seed-test.mjs",
+      "tests/consumer/runtime/demo-reset-test.sh",
+      "tests/consumer/runtime/i18n-runtime-seed-sync-test.sh",
+      "tests/consumer/runtime/restart-update-stack-test.sh",
+      "tests/consumer/runtime/tls-worker-test.sh",
+      "tests/unit/debian-render-test.py",
+      "tests/unit/image-content-fingerprint-test.sh",
+      "tests/unit/release-config-test.py",
+      "tests/unit/runtime-config-test.py",
+      "tests/unit/seeded-media-test.py",
+      "tests/unit/service-manager-test.py",
+      "tests/unit/update-status-server-test.py",
+      "tests/unit/update-worker-test.sh"
+    ],
+    "projectSpecificAssertions": "None in consuming source trees; contract inputs and expected deployment values are project JSON.",
+    "oldDirectoriesRemoved": true,
+    "failuresRepaired": [
+      "Mobile QA isolation test project-root resolution after relocation",
+      "Historical migrations 020/022 checked against their immutable expected revisions/locations; current full catalog and demo-geometry validation retained",
+      "Python caches excluded from npm payload after test grouping",
+      "Additional Mongo subject folders: corrected project-root URL depth and reran every affected static case successfully."
+    ],
+    "selectionCounts": {
+      "myscoutee-backend": {
+        "selected": 59,
+        "common": 59,
+        "projectContracts": 0
+      },
+      "myscoutee-template": {
+        "selected": 35,
+        "common": 35,
+        "projectContracts": 0
+      },
+      "myscoutee-registry": {
+        "selected": 7,
+        "common": 7,
+        "projectContracts": 0
+      }
+    },
+    "sharedMongoTransport": "tests/lib/mongo_test_runtime.py",
+    "configurationCases": [
+      "release-project.json",
+      "ui-translation.json",
+      "release-seeds.json",
+      "integration-indexes.json",
+      "deployment-inputs.json",
+      "artifact-contract.json",
+      "docker-context.json",
+      "contract-inputs.json",
+      "host-lifecycle.json",
+      "nginx-transport.json"
+    ],
+    "projectContracts": "All selected migration, catalog, lifecycle, routing and isolation checks are supplied by shared tests/consumer feature contracts.",
+    "compatibilityFixture": "Unit compatibility requirements are independent fixture data; no deleted production policy was restored."
+  },
+  "publicVerification": {
+    "implementation": "verification/public",
+    "selection": "config/packaging/verification.json",
+    "unchangedFiles": [
+      "run.mjs",
+      "browser-smoke.mjs",
+      "lib/assertions.mjs",
+      "lib/http.mjs"
+    ],
+    "contentContracts": "Original landing/documents implementations; import path changed only",
+    "cachePolicies": "Original hashed-assets/backend and immutable-assets/template expectations selected explicitly",
+    "catalogParity": "Both original catalogs compared successfully",
+    "archiveLayoutUnchanged": true,
+    "execution": "Manual only; validation used parser/help and disposable local fixtures"
+  },
+  "directoryClosure": {
+    "applicationSourceDirectoriesRemoved": [
+      "myscoutee-backend/packaging",
+      "myscoutee-template/packaging"
+    ],
+    "existingArtifactsMovedIntactTo": "build/packaging/dist",
+    "sharedDocumentation": [
+      "docs/production.md",
+      "docs/update-progress.md",
+      "verification/public/README.md"
+    ],
+    "projectDocumentation": "guides/development/reference/",
+    "installedPathsUnchanged": true,
+    "verification": {
+      "myscoutee-backend": {
+        "payloadAndControlFiles": 237,
+        "modeDifferences": 0,
+        "changed": [
+          "opt/myscoutee/packaging/scripts/backup-production.sh",
+          "opt/myscoutee/packaging/migrations/README.md",
+          "usr/share/myscoutee/myscoutee-client-tools_1.0.0.tar.gz"
+        ],
+        "archiveVerifierCatalogIdentical": true,
+        "actualDebMatchesStage": true,
+        "oldSourceDirectoryAbsent": true
+      },
+      "myscoutee-template": {
+        "payloadAndControlFiles": 101,
+        "modeDifferences": 0,
+        "changed": [
+          "opt/myscoutee-template/packaging/scripts/backup-production.sh",
+          "opt/myscoutee-template/packaging/migrations/README.md",
+          "usr/share/myscoutee-template/myscoutee-template-client-tools_1.0.0.tar.gz"
+        ],
+        "archiveVerifierCatalogIdentical": true,
+        "actualDebMatchesStage": true,
+        "oldSourceDirectoryAbsent": true
+      }
+    },
+    "buildDelegation": {
+      "myscoutee-backend": {
+        "frontendBuildDelegated": true,
+        "gradleBuildDelegated": true,
+        "imageBuildDelegated": true,
+        "actualBuildOrNetworkStarted": false
+      },
+      "myscoutee-template": {
+        "frontendBuildDelegated": true,
+        "gradleBuildDelegated": true,
+        "imageBuildDelegated": true,
+        "actualBuildOrNetworkStarted": false
+      }
+    },
+    "finalVerification": {
+      "myscoutee-backend": {
+        "files": 237,
+        "changed": [
+          "opt/myscoutee/packaging/scripts/backup-production.sh",
+          "opt/myscoutee/packaging/scripts/image-content-fingerprint.sh",
+          "opt/myscoutee/packaging/migrations/README.md",
+          "usr/share/myscoutee/myscoutee-client-tools_1.0.0.tar.gz"
+        ],
+        "modeDifferences": 0,
+        "actualDebMatchesStage": true
+      },
+      "myscoutee-template": {
+        "files": 101,
+        "changed": [
+          "opt/myscoutee-template/packaging/scripts/backup-production.sh",
+          "opt/myscoutee-template/packaging/scripts/image-content-fingerprint.sh",
+          "opt/myscoutee-template/packaging/migrations/README.md",
+          "usr/share/myscoutee-template/myscoutee-template-client-tools_1.0.0.tar.gz"
+        ],
+        "modeDifferences": 0,
+        "actualDebMatchesStage": true
+      },
+      "myscoutee-registry": {
+        "files": 14,
+        "changed": [
+          "opt/myscoutee-registry/packaging/scripts/image-content-fingerprint.sh",
+          "usr/share/myscoutee-registry/myscoutee-registry-client-tools_9.8.7.tar.gz",
+          "usr/share/doc/myscoutee-registry/README.Debian"
+        ],
+        "modeDifferences": 0,
+        "allMaintainerAndHostPolicyBytesUnchanged": true
+      }
+    }
+  },
+  "registryPackagingPlan": {
+    "steps": [
+      {
+        "step": 1,
+        "task": "Capture complete source inventory, preserve existing client-test change, run isolated current packaging contracts",
+        "status": "complete"
+      },
+      {
+        "step": 2,
+        "task": "Move Compose, environment examples, Docker build definitions and public release metadata into Registry config/packaging; record actual lifecycle differences",
+        "status": "complete"
+      },
+      {
+        "step": 3,
+        "task": "Reuse common transport and image fingerprint implementation after equivalence checks; keep provisioning, retained-state and signature contracts intact",
+        "status": "complete"
+      },
+      {
+        "step": 4,
+        "task": "Extract configurable Docker-context build and standalone container-stack packaging/lifecycle mechanisms; remove original source copies and rewire the npm dependency",
+        "status": "complete"
+      },
+      {
+        "step": 5,
+        "task": "Group Registry packaging tests under tests/packaging, retain Registry protocol-specific verifier contracts under their project owner, compare generated payloads and run focused contracts",
+        "status": "complete"
+      },
+      {
+        "step": 6,
+        "task": "After packaging is complete, align Registry guides and E2E directory ownership with the backend layout without changing test logic",
+        "status": "complete"
+      }
+    ],
+    "differencesRequiringPreservation": [
+      "Registry installation never starts/restarts the service implicitly",
+      "Explicit deployment env plus matching valid TLS inputs required for first client-triggered startup",
+      "65532 runtime ownership, SQLite/signing/VOPRF retained recovery state and two-image inventory",
+      "Registry release signature domains and plain-version restriction",
+      "Registry loopback forwarding refuses privileged local ports",
+      "Registry public verifier rejects all redirects and restricts insecure HTTP to loopback"
+    ],
+    "sharedCandidates": [
+      "SSH transport differs only in internal askpass environment-variable name",
+      "Docker image fingerprints canonicalize the same runtime fields and layer digests; common implementation validates the source shape more explicitly",
+      "Forwarding mechanism is common; port minimum/defaults and start/stop policy differ",
+      "Docker build contexts are configured filesystem inputs; no Java/Go packaging split is required"
+    ],
+    "mechanisms": {
+      "common": "Transport, configurable forwarding, fingerprint, Docker context builder, provisioned client/lifecycle/package templates and all seven configured test runners",
+      "projectData": "config/packaging container identity, contexts, control metadata, Compose, Dockerfiles/env examples and explicit test expectations",
+      "projectProtocol": "tests/deployment/verify retains the original signed Registry API assertions and strict redirect/HTTP boundary",
+      "rendering": "Generated implementations under build/, with metadata substituted; no source forwarding files",
+      "renderedParity": {
+        "debian/postinst": "byte-identical",
+        "debian/prerm": "byte-identical",
+        "debian/postrm": "byte-identical",
+        "systemd/myscoutee-registry.service": "byte-identical",
+        "scripts/qualify-deployment.sh": "byte-identical",
+        "scripts/registry-compose.sh": "byte-identical",
+        "client-tools/verify-release.sh": "byte-identical"
+      }
+    },
+    "verification": {
+      "packageVersion": "1.4.7-dev.26",
+      "artifacts": {
+        "myscoutee-backend": {
+          "files": 237,
+          "changed": [
+            "opt/myscoutee/packaging/scripts/backup-production.sh",
+            "opt/myscoutee/packaging/scripts/image-content-fingerprint.sh",
+            "opt/myscoutee/packaging/migrations/README.md",
+            "usr/share/myscoutee/myscoutee-client-tools_1.0.0.tar.gz"
+          ],
+          "modeDifferences": 0,
+          "actualDebMatchesStage": true
+        },
+        "myscoutee-template": {
+          "files": 101,
+          "changed": [
+            "opt/myscoutee-template/packaging/scripts/backup-production.sh",
+            "opt/myscoutee-template/packaging/scripts/image-content-fingerprint.sh",
+            "opt/myscoutee-template/packaging/migrations/README.md",
+            "usr/share/myscoutee-template/myscoutee-template-client-tools_1.0.0.tar.gz"
+          ],
+          "modeDifferences": 0,
+          "actualDebMatchesStage": true
+        },
+        "myscoutee-registry": {
+          "files": 14,
+          "changed": [
+            "opt/myscoutee-registry/packaging/scripts/image-content-fingerprint.sh",
+            "usr/share/myscoutee-registry/myscoutee-registry-client-tools_9.8.7.tar.gz",
+            "usr/share/doc/myscoutee-registry/README.Debian"
+          ],
+          "modeDifferences": 0,
+          "allMaintainerAndHostPolicyBytesUnchanged": true
+        }
+      },
+      "restrictedDockerContexts": {
+        "contextCount": 2,
+        "buildArgumentsIdentical": true,
+        "contextBytesAndModesIdentical": true,
+        "realDockerBuildStarted": false
+      },
+      "focusedCasesPassed": 32,
+      "artifactContract": "Positive configured fixture and missing-image rejection passed; no image executed",
+      "sourceConfigurationBytes": "Original Registry Compose, Dockerfiles, environment examples, control metadata and version input unchanged",
+      "goE2E": "Go source hashes unchanged. Opt-in compilation was not run because the host has no go executable.",
+      "qualificationBoundary": "No application/VM startup, image build, live Mongo test or deployment install performed."
+    }
+  },
+  "registryLayout": {
+    "guides": {
+      "plans": "guides/development/plans",
+      "releases": "guides/development/releases",
+      "manuals": "guides/publication/manuals"
+    },
+    "e2e": "tests/e2e",
+    "goApplicationSource": "cmd/registry and internal unchanged",
+    "e2eGoSourceHashes": {
+      "registry_e2e_test.go": "e15ed9368cbf2b5f35a5fc8726601e9715b4c3af98204cb4407c69287ba0f0d7",
+      "doc.go": "a340e195e8de86fb2d2a669e33ae79570084fec2f23ac925200446998af7c922"
+    },
+    "emptySourceDirectoriesRemoved": true,
+    "deploymentVerifier": "tests/deployment/verify",
+    "javaGoQualification": "tests/integration/qualify-java-rails.sh"
+  },
+  "sourceCheckoutTools": {
+    "seedParity": {
+      "implementation": "release/audit/check-seed-parity.py",
+      "projectInputs": "config/packaging/tests/release-seeds.json",
+      "domainChecks": "Shared audit_rules and optional chat fixture checks; project rules and expected values are configuration data in release-seeds.json.",
+      "entryPoints": "Direct packaging seed-parity command; no local forwarders."
+    },
+    "qaRelease": "release/qa",
+    "qualification": {
+      "implementation": "verification/qualification",
+      "selection": "config/packaging/qualification.json",
+      "identity": "config/packaging/release-project.json"
+    },
+    "datastorePurge": "runtime/development/purge-local-datastores.sh",
+    "imageVariants": {
+      "implementation": "release/seeds/prepare-seed-image-variants.mjs",
+      "selection": "config/packaging/seed-images.json"
+    },
+    "seedMaintenance": {
+      "common": [
+        "release/seeds/assign-seed-user-emails.mjs",
+        "release/seeds/backfill-seed-distances.mjs",
+        "release/seeds/synchronize-seed-profile-details.mjs"
+      ],
+      "projectSpecific": [
+        "config/packaging/seeds/scripts/generate-help-center-illustrations.mjs",
+        "config/packaging/seeds/scripts/normalize-chat-seed.mjs",
+        "config/packaging/seeds/scripts/reconcile-group-menu-counters.mjs",
+        "config/packaging/seeds/scripts/synchronize-demo-image-pools.mjs"
+      ],
+      "selection": "Project JSON under config/packaging/seeds/data; direct npm script bindings to each owner."
+    }
+  },
+  "remainingPackagingContracts": {
+    "steps": [
+      {
+        "step": 1,
+        "task": "Capture the complete remaining test source inventory and source hashes",
+        "status": "complete"
+      },
+      {
+        "step": 2,
+        "task": "Move selected feature contracts into the shared package; bind only filesystem roots and existing helper imports",
+        "status": "complete"
+      },
+      {
+        "step": 3,
+        "task": "Keep project composition and expected deployment values in config/packaging/tests",
+        "status": "complete"
+      },
+      {
+        "step": 4,
+        "task": "Rebind both consumers, remove original implementations and emptied folders",
+        "status": "complete"
+      },
+      {
+        "step": 5,
+        "task": "Verify syntax, unchanged embedded Mongo programs, static assertions and installed package selection; leave runtime checks opt-in",
+        "status": "complete"
+      }
+    ],
+    "implementationCount": 32,
+    "implementations": [
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/deployment/deployment-asset-cache-test.mjs",
+        "packageSource": "tests/consumer/deployment/deployment-asset-cache-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/deployment/mobile-qa-isolation-test.mjs",
+        "packageSource": "tests/consumer/deployment/mobile-qa-isolation-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/deployment/nginx-transport-policy-test.sh",
+        "packageSource": "tests/consumer/deployment/nginx-transport-policy-test.sh"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/catalogs/compact-guide-migration-test.py",
+        "packageSource": "tests/consumer/mongo/catalogs/compact-guide-migration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/catalogs/default-help-migration-test.py",
+        "packageSource": "tests/consumer/mongo/catalogs/default-help-migration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/catalogs/default-help-v5-migration-test.py",
+        "packageSource": "tests/consumer/mongo/catalogs/default-help-v5-migration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/catalogs/four-language-content-test.mjs",
+        "packageSource": "tests/consumer/mongo/catalogs/four-language-content-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/catalogs/release-catalog-parity-runtime-test.py",
+        "packageSource": "tests/consumer/mongo/catalogs/release-catalog-parity-runtime-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/catalogs/release-catalog-parity-test.mjs",
+        "packageSource": "tests/consumer/mongo/catalogs/release-catalog-parity-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/configuration/deployment-configuration-migration-test.py",
+        "packageSource": "tests/consumer/mongo/configuration/deployment-configuration-migration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/configuration/exchange-rate-configuration-test.py",
+        "packageSource": "tests/consumer/mongo/configuration/exchange-rate-configuration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/configuration/feedback-access-migration-test.mjs",
+        "packageSource": "tests/consumer/mongo/configuration/feedback-access-migration-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/configuration/release-system-defaults-test.py",
+        "packageSource": "tests/consumer/mongo/configuration/release-system-defaults-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/demo/demo-location-seed-test.mjs",
+        "packageSource": "tests/consumer/mongo/demo/demo-location-seed-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/demo/demo-profile-details-migration-test.py",
+        "packageSource": "tests/consumer/mongo/demo/demo-profile-details-migration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/demo/demo-profile-lifecycle-test.mjs",
+        "packageSource": "tests/consumer/mongo/demo/demo-profile-lifecycle-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/indexes/mongo-replica-default-test.py",
+        "packageSource": "tests/consumer/mongo/indexes/mongo-replica-default-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/indexes/runtime-index-parity-test.mjs",
+        "packageSource": "tests/consumer/mongo/indexes/runtime-index-parity-test.mjs"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/media/seeded-image-migration-test.py",
+        "packageSource": "tests/consumer/mongo/media/seeded-image-migration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/media/seeded-media-integration-test.py",
+        "packageSource": "tests/consumer/mongo/media/seeded-media-integration-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/release/migration-chain-test.py",
+        "packageSource": "tests/consumer/mongo/release/migration-chain-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/retention/chat-redis-blocking-test.py",
+        "packageSource": "tests/consumer/mongo/retention/chat-redis-blocking-test.py"
+      },
+      {
+        "repo": "myscoutee-backend",
+        "source": "tests/packaging/mongo/retention/owner-version-import-test.py",
+        "packageSource": "tests/consumer/mongo/retention/owner-version-import-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/deployment/host-lifecycle-test.py",
+        "packageSource": "tests/consumer/deployment/host-lifecycle-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/catalogs/release-catalog-parity-test.mjs",
+        "packageSource": "tests/consumer/mongo/catalogs/selected-release-catalog-parity-test.mjs"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/indexes/runtime-index-parity-test.mjs",
+        "packageSource": "tests/consumer/mongo/indexes/selected-runtime-index-parity-test.mjs"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/media/media-deletion-runtime-test.py",
+        "packageSource": "tests/consumer/mongo/media/media-deletion-runtime-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/media/media-enqueue-runtime-test.py",
+        "packageSource": "tests/consumer/mongo/media/media-enqueue-runtime-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/media/media-location-runtime-test.py",
+        "packageSource": "tests/consumer/mongo/media/media-location-runtime-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/release/migration-chain-test.py",
+        "packageSource": "tests/consumer/mongo/release/selected-migration-chain-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/retention/account-purge-runtime-test.py",
+        "packageSource": "tests/consumer/mongo/retention/account-purge-runtime-test.py"
+      },
+      {
+        "repo": "myscoutee-template",
+        "source": "tests/packaging/mongo/retention/push-outbox-runtime-test.py",
+        "packageSource": "tests/consumer/mongo/retention/push-outbox-runtime-test.py"
+      }
+    ],
+    "projectConfiguration": [
+      "config/packaging/tests/selection.json",
+      "config/packaging/tests/contract-inputs.json",
+      "config/packaging/tests/release-seeds.json",
+      "config/packaging/tests/host-lifecycle.json (selected consumers)",
+      "config/packaging/tests/nginx-transport.json (selected consumers)"
+    ],
+    "localImplementations": "Removed; both local tests/packaging directories are absent. Seed parity assertions are also shared and driven by the project JSON parity rules.",
+    "packageVersion": "1.4.7-dev.29",
+    "verification": {
+      "installedStaticCases": 12,
+      "seedAuditUnitCases": 3,
+      "generatedMongoPrograms": 11,
+      "mongoProgramsExecuted": false,
+      "allInputFilesExist": true,
+      "packedSourceParityFiles": 33,
+      "installedOwnership": {
+        "myscoutee-backend": {
+          "commonSelections": 59,
+          "localImplementations": 0,
+          "installedVersion": "1.4.7-dev.29"
+        },
+        "myscoutee-template": {
+          "commonSelections": 35,
+          "localImplementations": 0,
+          "installedVersion": "1.4.7-dev.29"
+        },
+        "myscoutee-registry": {
+          "commonSelections": 7,
+          "localImplementations": 0,
+          "installedVersion": "1.4.7-dev.29"
+        }
+      }
+    }
+  }
+}

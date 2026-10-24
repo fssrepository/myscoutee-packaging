@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PACKAGE_NAME="${DPKG_MAINTSCRIPT_PACKAGE:?dpkg package identity is required}"
+[[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9-]{1,63}$ ]] || exit 1
+readonly PACKAGE_NAME
+
+read_env_file_value() {
+  local key="$1"
+  local file="$2"
+  local line value
+
+  [[ -f "${file}" && ! -L "${file}" ]] || return 1
+  line="$(sed -n "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//p" "${file}" | tail -n 1)"
+  [[ -n "${line}" ]] || return 1
+
+  value="${line%$'\r'}"
+  if [[ "${value}" == \"*\" && "${value}" == *\" ]]; then
+    value="${value:1:${#value}-2}"
+  elif [[ "${value}" == \'*\' && "${value}" == *\' ]]; then
+    value="${value:1:${#value}-2}"
+  fi
+
+  printf '%s' "${value}"
+}
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
+if [[ "${1:-}" = "purge" ]]; then
+  if command -v docker >/dev/null 2>&1; then
+    env_file="${MYSCOUTEE_POSTRM_ENV_FILE:-/etc/${PACKAGE_NAME}/${PACKAGE_NAME}.env}"
+    # This inventory is rendered into dpkg control data at package build time.
+    # /opt may already be absent when dpkg purges a previously removed package.
+    while IFS=$'\t' read -r key default_volume; do
+      [[ -n "$key" ]] || continue
+      volume="$(read_env_file_value "$key" "$env_file" || true)"
+      volume="${volume:-$default_volume}"
+      if docker volume inspect "$volume" >/dev/null 2>&1 \
+          && ! docker volume rm -f "$volume" >/dev/null 2>&1; then
+        echo "Warning: could not remove ${PACKAGE_NAME} volume ${volume}." >&2
+      fi
+    done <<'PACKAGE_VOLUME_RULES'
+@PACKAGE_VOLUME_RULES@
+PACKAGE_VOLUME_RULES
+
+    managed_images="$(
+      docker images --format "{{.Repository}}:{{.Tag}}" 2>/dev/null \
+        | awk -v repositories='@PACKAGE_IMAGE_REPOSITORIES@' '
+            BEGIN { count=split(repositories, list, ","); for(i=1;i<=count;i++) allowed[list[i]]=1 }
+            { repository=$0; sub(/:.*/, "", repository); if (repository in allowed) print }
+          ' | sort -u || true
+    )"
+    if [[ -n "${managed_images}" ]]; then
+      while IFS= read -r managed_image; do
+        [[ -n "${managed_image}" ]] || continue
+        if ! docker image rm -f "${managed_image}" >/dev/null 2>&1; then
+          echo "Warning: could not remove MyScoutee image ${managed_image}." >&2
+        fi
+      done <<< "${managed_images}"
+    fi
+  fi
+
+  rm -rf /etc/${PACKAGE_NAME}
+  rm -rf /opt/${PACKAGE_NAME}
+  rm -rf /var/lib/${PACKAGE_NAME}
+  rm -rf /var/log/${PACKAGE_NAME}
+  rm -rf /var/cache/${PACKAGE_NAME}-update
+fi

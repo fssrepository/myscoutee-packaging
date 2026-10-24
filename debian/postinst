@@ -1,0 +1,656 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+case "${1:-}" in
+  configure)
+    ;;
+  abort-upgrade|abort-remove|abort-deconfigure)
+    # A failed package transition must not rerun the full deployment
+    # configuration path as a recovery side effect.
+    exit 0
+    ;;
+  *)
+    echo "Unsupported MyScoutee postinst action: ${1:-missing}" >&2
+    exit 1
+    ;;
+esac
+
+# dpkg supplies this identity for configure and every upgrade. Paths cannot be
+# selected by an API request or mutable deployment configuration.
+PACKAGE_NAME="${DPKG_MAINTSCRIPT_PACKAGE:?dpkg package identity is required}"
+[[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9-]{1,63}$ ]] || exit 1
+PACKAGE_ROOT="/opt/${PACKAGE_NAME}"
+PACKAGE_ETC="/etc/${PACKAGE_NAME}"
+PACKAGE_STATE="/var/lib/${PACKAGE_NAME}"
+PACKAGE_LOG="/var/log/${PACKAGE_NAME}"
+PACKAGE_CACHE="/var/cache/${PACKAGE_NAME}-update"
+readonly PACKAGE_NAME PACKAGE_ROOT PACKAGE_ETC PACKAGE_STATE PACKAGE_LOG PACKAGE_CACHE
+
+source "${PACKAGE_ROOT}/packaging/scripts/release-project.sh"
+release_project_load "${PACKAGE_ROOT}/packaging/scripts" 0 || {
+  echo 'The installed release identity is missing or unsafe.' >&2; exit 1;
+}
+[[ "$RELEASE_PROJECT_NAME" == "$PACKAGE_NAME" ]] || exit 1
+MYSCOUTEE_API_UID="$RELEASE_PROJECT_UID"
+MYSCOUTEE_API_GID="$RELEASE_PROJECT_GID"
+
+# Trusted package data, never an application request or deployment override.
+INSTALL_POLICY=${PACKAGE_ROOT}/packaging/templates/install-policy.json
+[[ -f "$INSTALL_POLICY" && ! -L "$INSTALL_POLICY" && "$(stat -c %u "$INSTALL_POLICY")" == 0 ]] || {
+  echo 'The installed lifecycle policy is missing or unsafe.' >&2; exit 1;
+}
+(( (8#$(stat -c %a "$INSTALL_POLICY") & 8#022) == 0 )) || exit 1
+jq -e --arg package "$PACKAGE_NAME" --argjson uid "$MYSCOUTEE_API_UID" --argjson gid "$MYSCOUTEE_API_GID" '
+  def key: type == "string" and test("^[A-Z][A-Z0-9_]+$");
+  def text: type == "string" and (test("[[:cntrl:]]") | not);
+  def directory: type == "string" and test("^/(etc|var/lib)/[a-z][a-z0-9-]+(/[a-z0-9-]+)+$")
+    and (startswith("/etc/" + $package + "/") or startswith("/var/lib/" + $package + "/"));
+  def secret: type == "object" and (keys|sort) == ["encoding","key","prefix"]
+    and (.key|key) and (.encoding=="hex" or .encoding=="uuid")
+    and (.prefix|type=="string" and test("^[a-zA-Z0-9_]*$"));
+  type == "object" and .schemaVersion == 1
+  and (keys|sort) == ["ensureSecrets","environmentDefaults","freshSecrets","installationMessage",
+    "migrateOwnership","mongoSeedFallback","ownedDirectories","replicaSetDefaults","requiredMongoCollections","runtimeIdentityMigrations","schemaVersion"]
+  and (.ownedDirectories|type=="array" and all(.[];
+    (keys|sort)==["gid","mode","path","uid"] and (.path|directory)
+    and (.mode|type=="string" and test("^0[0-7]{3}$")) and .uid==$uid and .gid==$gid))
+  and (.migrateOwnership|type=="array" and all(.[];directory))
+  and (.runtimeIdentityMigrations|type=="array" and length <= 8 and all(.[];
+    (keys|sort)==["gid","maximumVersion","uid"]
+    and (.maximumVersion|type=="string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+$"))
+    and ([.uid,.gid]|all(.[];type=="number" and floor==. and .>=10000 and .<=60000))))
+  and (.environmentDefaults|type=="object" and all(to_entries[];(.key|key) and (.value|text)))
+  and (.freshSecrets|type=="array" and all(.[];secret))
+  and (.ensureSecrets|type=="array" and all(.[];secret))
+  and (.requiredMongoCollections|type=="array" and all(.[];type=="string" and test("^[A-Za-z][A-Za-z0-9_]*$")))
+  and (.mongoSeedFallback|text) and (.replicaSetDefaults|type=="string")
+  and (.installationMessage|type=="string")
+' "$INSTALL_POLICY" >/dev/null || { echo 'Invalid installed lifecycle policy.' >&2; exit 1; }
+
+
+printf '[myscoutee-update-phase] CONFIGURING_PACKAGE\n'
+
+# The host reader uses the same numeric ownership as the application. Register
+# a real non-login system identity rather than relying on an unknown numeric user.
+# Reject a foreign identity before sysusers can allocate a fallback UID.
+for entry in "passwd:${MYSCOUTEE_API_UID}" "group:${MYSCOUTEE_API_GID}"; do
+  record="$(getent "${entry%%:*}" "${entry#*:}" || true)"
+  if [[ -n "$record" && "${record%%:*}" != "${PACKAGE_NAME}-runtime" ]]; then
+    echo "Runtime ${entry} is reserved by another account; choose a distinct project identity." >&2
+    exit 1
+  fi
+done
+migrate_runtime_identity() {
+  local previous_version="$1" account="${PACKAGE_NAME}-runtime" row old_uid old_gid maximum current_uid current_gid root
+  [[ -n "$previous_version" ]] || return 0
+  getent passwd "$account" >/dev/null || return 0
+  while IFS= read -r row; do
+    maximum="$(jq -r '.maximumVersion' <<< "$row")"
+    dpkg --compare-versions "$previous_version" le "${maximum/-/\~}" || continue
+    old_uid="$(jq -r '.uid' <<< "$row")"; old_gid="$(jq -r '.gid' <<< "$row")"
+    current_uid="$(id -u "$account")"; current_gid="$(id -g "$account")"
+    [[ "$current_uid" == "$old_uid" || "$current_uid" == "$MYSCOUTEE_API_UID" ]] || continue
+    [[ "$current_gid" == "$old_gid" || "$current_gid" == "$MYSCOUTEE_API_GID" ]] || continue
+    # Never migrate another product's account or a shared numeric identity.
+    [[ "$(getent passwd "$current_uid" | cut -d: -f1)" == "$account" ]] || return 1
+    [[ "$(getent group "$current_gid" | cut -d: -f1)" == "$account" ]] || return 1
+    for root in "$PACKAGE_ETC" "$PACKAGE_STATE" "$PACKAGE_CACHE" "$PACKAGE_LOG" "$PACKAGE_ROOT"; do
+      [[ ! -L "$root" ]] || { echo "Unsafe runtime migration root: $root" >&2; return 1; }
+    done
+    if [[ "$current_gid" != "$MYSCOUTEE_API_GID" ]]; then groupmod --gid "$MYSCOUTEE_API_GID" "$account"; fi
+    if [[ "$current_uid" != "$MYSCOUTEE_API_UID" || "$current_gid" != "$MYSCOUTEE_API_GID" ]]; then
+      usermod --uid "$MYSCOUTEE_API_UID" --gid "$MYSCOUTEE_API_GID" "$account"
+    fi
+    # Rerunning after interruption also finishes file ownership migration.
+    # Preserve every mode, root-owned secret, Mongo UID and unrelated account.
+    for root in "$PACKAGE_ETC" "$PACKAGE_STATE" "$PACKAGE_CACHE" "$PACKAGE_LOG" "$PACKAGE_ROOT"; do
+      [[ -d "$root" ]] || continue
+      find "$root" -xdev -uid "$old_uid" -exec chown -h "+$MYSCOUTEE_API_UID" -- {} +
+      find "$root" -xdev -gid "$old_gid" -exec chgrp -h "+$MYSCOUTEE_API_GID" -- {} +
+    done
+    return 0
+  done < <(jq -c '.runtimeIdentityMigrations[]' "$INSTALL_POLICY")
+}
+
+migrate_runtime_identity "${2:-}"
+
+systemd-sysusers /usr/lib/sysusers.d/${PACKAGE_NAME}.conf
+if [[ "$(id -u ${PACKAGE_NAME}-runtime)" != "${MYSCOUTEE_API_UID}" \
+   || "$(id -g ${PACKAGE_NAME}-runtime)" != "${MYSCOUTEE_API_GID}" ]]; then
+  echo "${PACKAGE_NAME} runtime identity does not match UID/GID ${MYSCOUTEE_API_UID}:${MYSCOUTEE_API_GID}." >&2
+  exit 1
+fi
+
+install_numeric_owned_directory() {
+  local mode="$1"
+  local owner_uid="$2"
+  local owner_gid="$3"
+  shift 3
+
+  [[ "${owner_uid}" =~ ^[0-9]+$ && "${owner_gid}" =~ ^[0-9]+$ ]] || {
+    echo "MyScoutee directory ownership must use numeric IDs." >&2
+    return 1
+  }
+  install -d -m "${mode}" -- "$@"
+  chown "+${owner_uid}:+${owner_gid}" -- "$@"
+  chmod "${mode}" -- "$@"
+}
+
+install -d -m 0755 ${PACKAGE_ETC}
+install_numeric_owned_directory \
+  0750 0 "${MYSCOUTEE_API_GID}" ${PACKAGE_ETC}/configuration
+install -d -m 0755 ${PACKAGE_ROOT}/server
+install -d -m 0755 ${PACKAGE_ROOT}/server/docker/conf/nginx/keys
+install -d -m 0755 ${PACKAGE_ROOT}/server/projects/profile/secrets
+install -d -m 0755 ${PACKAGE_STATE}/data
+install -d -m 0700 ${PACKAGE_STATE}/update
+install -d -m 0700 ${PACKAGE_STATE}/update/inbox
+install_numeric_owned_directory \
+  0700 "${MYSCOUTEE_API_UID}" "${MYSCOUTEE_API_GID}" \
+  ${PACKAGE_STATE}/update/inbox/requests \
+  ${PACKAGE_STATE}/update/inbox/staging
+install -d -m 0700 ${PACKAGE_STATE}/update/archive
+install -d -m 0700 ${PACKAGE_STATE}/update/archive/processing
+install -d -m 0700 ${PACKAGE_STATE}/update/archive/completed
+install -d -m 0700 ${PACKAGE_STATE}/update/archive/failed
+install -d -m 0700 ${PACKAGE_STATE}/update/archive/rejected
+install_numeric_owned_directory 0750 0 "${MYSCOUTEE_API_GID}" ${PACKAGE_STATE}/update/runtime
+install_numeric_owned_directory \
+  0750 0 "${MYSCOUTEE_API_GID}" \
+  ${PACKAGE_STATE}/update/runtime/jobs \
+  ${PACKAGE_ETC}/update
+install -d -m 0700 ${PACKAGE_CACHE}
+install -d -m 0700 ${PACKAGE_CACHE}/jobs
+install -d -m 0755 ${PACKAGE_LOG}
+install -d -m 0700 ${PACKAGE_LOG}/update
+install -d -m 0700 ${PACKAGE_STATE}/tls
+install -d -m 0700 ${PACKAGE_STATE}/tls/inbox
+install_numeric_owned_directory \
+  0700 "${MYSCOUTEE_API_UID}" "${MYSCOUTEE_API_GID}" \
+  ${PACKAGE_STATE}/tls/inbox/requests
+install -d -m 0700 ${PACKAGE_STATE}/tls/archive
+install -d -m 0700 ${PACKAGE_STATE}/tls/archive/processing
+install_numeric_owned_directory \
+  0750 0 "${MYSCOUTEE_API_GID}" ${PACKAGE_STATE}/tls/runtime
+install_numeric_owned_directory \
+  2750 0 "${MYSCOUTEE_API_GID}" ${PACKAGE_STATE}/tls/runtime/jobs
+install -d -m 0755 ${PACKAGE_STATE}/data/certbot/conf
+install -d -m 0755 ${PACKAGE_STATE}/data/certbot/www
+install -d -m 0755 /var/backups/${PACKAGE_NAME}
+install -m 0644 \
+  ${PACKAGE_ROOT}/packaging/update/README \
+  ${PACKAGE_ETC}/update/README
+
+MYSCOUTEE_OPERATOR_CONFIGURATION_KEY_DIR="${PACKAGE_ETC}/configuration" \
+MYSCOUTEE_CONFIGURATION_OWNER_UID=0 \
+MYSCOUTEE_CONFIGURATION_OWNER_GID="${MYSCOUTEE_API_GID}" \
+  ${PACKAGE_ROOT}/packaging/scripts/ensure-operator-configuration-key.sh
+
+# Additional product directories and ownership migrations are package inputs.
+while IFS=$'\t' read -r path mode owner_uid owner_gid; do
+  install_numeric_owned_directory "$mode" "$owner_uid" "$owner_gid" "$path"
+done < <(jq -r '.ownedDirectories[] | [.path,.mode,.uid,.gid] | @tsv' "$INSTALL_POLICY")
+while IFS= read -r path; do
+  chown -R --no-dereference "+${MYSCOUTEE_API_UID}:+${MYSCOUTEE_API_GID}" "$path"
+done < <(jq -r '.migrateOwnership[]' "$INSTALL_POLICY")
+if [[ -f ${PACKAGE_ETC}/update/release-public-key.pem \
+  && ! -L ${PACKAGE_ETC}/update/release-public-key.pem ]]; then
+  chown "+0:+${MYSCOUTEE_API_GID}" -- \
+    ${PACKAGE_ETC}/update/release-public-key.pem
+  chmod 0640 ${PACKAGE_ETC}/update/release-public-key.pem
+fi
+if [[ -f ${PACKAGE_ETC}/firebase-service-account.json \
+  && ! -L ${PACKAGE_ETC}/firebase-service-account.json ]]; then
+  chown "+0:+${MYSCOUTEE_API_GID}" -- \
+    ${PACKAGE_ETC}/firebase-service-account.json
+  chmod 0640 ${PACKAGE_ETC}/firebase-service-account.json
+fi
+
+generate_secret() {
+  if command -v openssl >/dev/null 2>&1; then
+    openssl rand -hex 32
+    return 0
+  fi
+
+  if [[ -r /dev/urandom ]]; then
+    LC_ALL=C od -An -N32 -tx1 /dev/urandom | tr -d ' \n'
+    return 0
+  fi
+
+  echo "Unable to generate production secrets: openssl is missing and /dev/urandom is unavailable." >&2
+  exit 1
+}
+
+ensure_bootstrap_tls_pair() {
+  local certificate_path="$1"
+  local private_key_path="$2"
+  local certificate_exists=false
+  local private_key_exists=false
+  local certificate_directory
+  local private_key_directory
+  local temporary_directory
+
+  if [[ -e "${certificate_path}" || -L "${certificate_path}" ]]; then
+    certificate_exists=true
+  fi
+  if [[ -e "${private_key_path}" || -L "${private_key_path}" ]]; then
+    private_key_exists=true
+  fi
+
+  if [[ "${certificate_exists}" == true \
+    && "${private_key_exists}" == true ]]; then
+    return 0
+  fi
+
+  if [[ "${certificate_exists}" != "${private_key_exists}" ]]; then
+    echo "A partial operator-managed TLS configuration was found." >&2
+    echo "Preserving the existing certificate or private key without replacement." >&2
+    echo "Restore the missing counterpart, or explicitly remove the remaining file before reconfiguring the package:" >&2
+    echo "  certificate: ${certificate_path}" >&2
+    echo "  private key: ${private_key_path}" >&2
+    return 1
+  fi
+
+  if ! command -v openssl >/dev/null 2>&1; then
+    echo "openssl is missing; cannot create the initial localhost TLS certificate." >&2
+    return 1
+  fi
+
+  certificate_directory="$(dirname -- "${certificate_path}")"
+  private_key_directory="$(dirname -- "${private_key_path}")"
+  if [[ "${certificate_directory}" != "${private_key_directory}" ]]; then
+    echo "The bootstrap TLS certificate and private key must use the same directory." >&2
+    return 1
+  fi
+
+  temporary_directory="$(
+    mktemp -d "${certificate_directory}/@TLS_TEMPORARY_PREFIX@XXXXXX"
+  )"
+  if ! openssl req -x509 -nodes -days @TLS_DAYS@ -newkey @TLS_KEY@ \
+      -keyout "${temporary_directory}/@TLS_PRIVATE_KEY@" \
+      -out "${temporary_directory}/@TLS_CERTIFICATE@" \
+      -subj "@TLS_SUBJECT@" \
+      -sha256 \
+      -addext "@TLS_ALT_NAMES@" \
+      >/dev/null 2>&1; then
+    rm -rf -- "${temporary_directory}"
+    echo "Failed to create the initial localhost TLS certificate." >&2
+    return 1
+  fi
+  chmod 0600 "${temporary_directory}/@TLS_PRIVATE_KEY@"
+  chmod 0644 "${temporary_directory}/@TLS_CERTIFICATE@"
+
+  if [[ -e "${certificate_path}" || -L "${certificate_path}" \
+    || -e "${private_key_path}" || -L "${private_key_path}" ]]; then
+    rm -rf -- "${temporary_directory}"
+    echo "TLS files appeared while the bootstrap pair was being generated; preserving them without replacement." >&2
+    return 1
+  fi
+
+  mv -- "${temporary_directory}/@TLS_PRIVATE_KEY@" "${private_key_path}"
+  mv -- "${temporary_directory}/@TLS_CERTIFICATE@" "${certificate_path}"
+  rmdir -- "${temporary_directory}"
+}
+
+generate_policy_secret() {
+  local encoding="$1" prefix="$2"
+  case "$encoding" in
+    hex) printf '%s%s' "$prefix" "$(generate_secret)" ;;
+    uuid) printf '%s%s' "$prefix" "$(generate_guid)" ;;
+    *) echo 'Unsupported package secret encoding.' >&2; return 1 ;;
+  esac
+}
+
+install_generated_secrets_file() {
+  local target template tmp key encoding prefix
+  target="${PACKAGE_ETC}/${PACKAGE_NAME}.secrets.env"
+  template="${PACKAGE_ROOT}/packaging/templates/${PACKAGE_NAME}.secrets.env"
+  tmp="$(mktemp "${target}.XXXXXX")"
+  chmod 0600 "$tmp"
+  cat "$template" > "$tmp"
+  while IFS=$'\t' read -r key encoding prefix; do
+    upsert_env_value "$tmp" "$key" "$(generate_policy_secret "$encoding" "$prefix")"
+  done < <(jq -r '.freshSecrets[] | [.key,.encoding,.prefix] | @tsv' "$INSTALL_POLICY")
+  install -m 0600 "$tmp" "$target"
+  rm -f "$tmp"
+}
+
+generate_guid() {
+  local random
+
+  random="$(generate_secret)"
+  printf '%s-%s-4%s-8%s-%s' \
+    "${random:0:8}" \
+    "${random:8:4}" \
+    "${random:13:3}" \
+    "${random:17:3}" \
+    "${random:20:12}"
+}
+
+read_env_file_value() {
+  local key="$1"
+  local file="$2"
+  local line value
+
+  [[ -f "${file}" ]] || return 1
+  line="$(sed -n "s/^[[:space:]]*${key}[[:space:]]*=[[:space:]]*//p" "${file}" | tail -n 1)"
+  [[ -n "${line}" ]] || return 1
+
+  value="${line%$'\r'}"
+  if [[ "${value}" == \"*\" && "${value}" == *\" ]]; then
+    value="${value:1:${#value}-2}"
+  elif [[ "${value}" == \'*\' && "${value}" == *\' ]]; then
+    value="${value:1:${#value}-2}"
+  fi
+
+  printf '%s' "${value}"
+}
+
+config_value() {
+  local key="$1"
+  local fallback="$2"
+  local value
+
+  value="$(read_env_file_value "${key}" ${PACKAGE_ETC}/${PACKAGE_NAME}.env || true)"
+  if [[ -n "${value}" ]]; then
+    printf '%s' "${value}"
+    return 0
+  fi
+
+  printf '%s' "${fallback}"
+}
+
+upsert_env_value() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+
+  if grep -q "^[[:space:]]*${key}[[:space:]]*=" "${file}"; then
+    sed -i "s|^[[:space:]]*${key}[[:space:]]*=.*|${key}=${value}|" "${file}"
+    return 0
+  fi
+
+  printf '\n%s=%s\n' "${key}" "${value}" >> "${file}"
+}
+
+ensure_env_default() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+
+  if ! grep -q "^[[:space:]]*${key}[[:space:]]*=" "${file}"; then
+    printf '\n%s=%s\n' "${key}" "${value}" >> "${file}"
+  fi
+}
+
+ensure_generated_secret() {
+  local file="$1"
+  local key="$2"
+  local value="$3"
+  local current
+
+  current="$(read_env_file_value "${key}" "${file}" || true)"
+  if [[ -z "${current}" ]]; then
+    upsert_env_value "${file}" "${key}" "${value}"
+  fi
+}
+
+ensure_mongo_seed_allow_list() {
+  local file current updated
+
+  file="${PACKAGE_ETC}/${PACKAGE_NAME}.env"
+  current="$(read_env_file_value MONGO_IMPORT_ALLOWED_COLLECTIONS_BY_DB "${file}" || true)"
+
+  if [[ -z "${current}" ]]; then
+    upsert_env_value "${file}" MONGO_IMPORT_ALLOWED_COLLECTIONS_BY_DB "$(jq -r .mongoSeedFallback "$INSTALL_POLICY")"
+    return 0
+  fi
+
+  # Check exact collection names in the production rule. A name in demo_db (or
+  # a longer collection name) does not make that input available in production.
+  updated="$(jq -r --arg current "$current" '
+    ($current | split(";")) as $rules
+    | ([$rules[] | select(startswith("@MONGO_DATABASE@:"))
+        | ltrimstr("@MONGO_DATABASE@:") | split(",")[] | select(length > 0)]
+       + .requiredMongoCollections | unique | join(",")) as $collections
+    | ([$rules[] | select(length > 0 and (startswith("@MONGO_DATABASE@:") | not))]
+       + ["@MONGO_DATABASE@:" + $collections]) | join(";")
+  ' "$INSTALL_POLICY")"
+  if [[ "$updated" != "$current" ]]; then
+    upsert_env_value "$file" MONGO_IMPORT_ALLOWED_COLLECTIONS_BY_DB "$updated"
+  fi
+}
+
+normalize_packaged_image_values() {
+  local env_file packaged_version
+
+  env_file="${PACKAGE_ETC}/${PACKAGE_NAME}.env"
+  packaged_version="$(sed -n '1p' ${PACKAGE_ROOT}/packaging/VERSION 2>/dev/null || true)"
+  if [[ ! "${packaged_version}" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-qa\.[1-9][0-9]*)?$ ]] \
+    || ! dpkg --validate-version "${packaged_version}" >/dev/null 2>&1; then
+    echo "The installed package version marker is missing or invalid." >&2
+    exit 1
+  fi
+  source ${PACKAGE_ROOT}/packaging/scripts/release-project.sh
+  release_project_load ${PACKAGE_ROOT}/packaging/scripts 0 || {
+    echo "The installed project policy is missing or invalid." >&2; exit 1;
+  }
+  local name reference
+  while IFS=$'\t' read -r name reference; do
+    upsert_env_value "${env_file}" "${name}" "${reference}"
+  done < <(release_project_images "${packaged_version}" | jq -r '.[] | [.environment,.reference] | @tsv')
+  upsert_env_value "${env_file}" MYSCOUTEE_VERSION "${packaged_version}"
+}
+
+normalize_packaged_image_value() {
+  local env_file="$1"
+  local key="$2"
+  local expected="$3"
+  local current legacy escaped
+
+  shift 3
+  current="$(read_env_file_value "${key}" "${env_file}" || true)"
+  [[ -n "${current}" ]] || return 0
+  [[ "${current}" != "${expected}" ]] || return 0
+
+  for legacy in "$@"; do
+    if [[ "${current}" == "${legacy}" ]]; then
+      escaped="${expected//\\/\\\\}"
+      escaped="${escaped//&/\\&}"
+      sed -i "s|^[[:space:]]*${key}[[:space:]]*=.*|${key}=${escaped}|" "${env_file}"
+      return 0
+    fi
+  done
+}
+
+ensure_docker_image() {
+  local image="$1"
+  local label="$2"
+
+  if docker image inspect "${image}" >/dev/null 2>&1; then
+    echo "${label} image is available: ${image}"
+    return 0
+  fi
+
+  echo "Pulling ${label} image: ${image}"
+  docker pull "${image}"
+}
+
+ensure_service_images() {
+@REQUIRED_IMAGES@
+}
+
+verify_packaged_image_manifest() {
+  local fingerprint_helper manifest version reference expected_fingerprint
+  local actual_fingerprint
+  local -a images=()
+
+  fingerprint_helper="${PACKAGE_ROOT}/packaging/scripts/image-content-fingerprint.sh"
+  manifest="${PACKAGE_ROOT}/packaging/IMAGE-MANIFEST.json"
+  version="$(sed -n '1p' ${PACKAGE_ROOT}/packaging/VERSION)"
+  source ${PACKAGE_ROOT}/packaging/scripts/release-project.sh
+  if [[ ! -f "${fingerprint_helper}" || -L "${fingerprint_helper}" ]] \
+    || ! release_project_load ${PACKAGE_ROOT}/packaging/scripts 0 \
+    || ! release_project_validate_manifest "${manifest}" "${version}"; then
+    echo "The package bundled-image manifest is missing or invalid." >&2
+    exit 1
+  fi
+
+  mapfile -t images < <(
+    jq -r '.images[] | [.reference, .contentFingerprint] | @tsv' "${manifest}"
+  )
+  for image in "${images[@]}"; do
+    IFS=$'\t' read -r reference expected_fingerprint <<< "${image}"
+    actual_fingerprint="$(
+      bash "${fingerprint_helper}" docker "${reference}" 2>/dev/null || true
+    )"
+    if [[ "${actual_fingerprint}" != "${expected_fingerprint}" ]]; then
+      echo "Bundled image content mismatch for ${reference}." >&2
+      exit 1
+    fi
+  done
+}
+
+if [[ ! -f ${PACKAGE_ETC}/${PACKAGE_NAME}.env ]]; then
+  install -m 0644 ${PACKAGE_ROOT}/packaging/templates/${PACKAGE_NAME}.env ${PACKAGE_ETC}/${PACKAGE_NAME}.env
+fi
+
+while IFS=$'\t' read -r key value; do
+  ensure_env_default ${PACKAGE_ETC}/${PACKAGE_NAME}.env "$key" "$value"
+done < <(jq -r '.environmentDefaults | to_entries[] | [.key,.value] | @tsv' "$INSTALL_POLICY")
+
+ensure_mongo_seed_allow_list
+
+normalize_packaged_image_values
+
+firebase_enabled="$(config_value FIREBASE_ENABLED @FIREBASE_ENABLED@)"
+if [[ -L ${PACKAGE_ETC}/firebase-service-account.json ]]; then
+  echo "Firebase service-account path must not be a symbolic link." >&2
+  exit 1
+elif [[ ! -f ${PACKAGE_ETC}/firebase-service-account.json ]]; then
+  if [[ "${firebase_enabled,,}" == "true" ]]; then
+    echo "Firebase is enabled, but ${PACKAGE_ETC}/firebase-service-account.json is missing." >&2
+    exit 1
+  fi
+  printf '{}\n' > ${PACKAGE_ETC}/firebase-service-account.json
+fi
+chown "+0:+${MYSCOUTEE_API_GID}" -- \
+  ${PACKAGE_ETC}/firebase-service-account.json
+chmod 0640 ${PACKAGE_ETC}/firebase-service-account.json
+
+if ! grep -q '^[[:space:]]*MONGO_REPLICA_SET_ENABLED=' ${PACKAGE_ETC}/${PACKAGE_NAME}.env; then
+  jq -r .replicaSetDefaults "$INSTALL_POLICY" >> ${PACKAGE_ETC}/${PACKAGE_NAME}.env
+fi
+
+if [[ ! -f ${PACKAGE_ETC}/${PACKAGE_NAME}.secrets.env ]]; then
+  install_generated_secrets_file
+fi
+
+while IFS=$'\t' read -r key encoding prefix; do
+  ensure_generated_secret ${PACKAGE_ETC}/${PACKAGE_NAME}.secrets.env "$key" \
+    "$(generate_policy_secret "$encoding" "$prefix")"
+done < <(jq -r '.ensureSecrets[] | [.key,.encoding,.prefix] | @tsv' "$INSTALL_POLICY")
+chmod 0600 ${PACKAGE_ETC}/${PACKAGE_NAME}.secrets.env
+
+MYSCOUTEE_BOOTSTRAP_ENV_FILE=${PACKAGE_ETC}/${PACKAGE_NAME}.env \
+MYSCOUTEE_BOOTSTRAP_SECRETS_FILE=${PACKAGE_ETC}/${PACKAGE_NAME}.secrets.env \
+MYSCOUTEE_BOOTSTRAP_OWNER_UID=0 \
+MYSCOUTEE_BOOTSTRAP_OWNER_GID=0 \
+  ${PACKAGE_ROOT}/packaging/scripts/ensure-operator-bootstrap.sh
+
+ln -sfn ${PACKAGE_ETC}/${PACKAGE_NAME}.env ${PACKAGE_ROOT}/server/.env
+ln -sfn ${PACKAGE_ETC}/${PACKAGE_NAME}.secrets.env ${PACKAGE_ROOT}/server/.env.secrets
+
+if [[ ! -e ${PACKAGE_ROOT}/server/data ]]; then
+  ln -sfn ${PACKAGE_STATE}/data ${PACKAGE_ROOT}/server/data
+fi
+
+ensure_bootstrap_tls_pair \
+  ${PACKAGE_ROOT}/server/docker/conf/nginx/keys/@TLS_CERTIFICATE@ \
+  ${PACKAGE_ROOT}/server/docker/conf/nginx/keys/@TLS_PRIVATE_KEY@
+
+if command -v docker >/dev/null 2>&1 && command -v systemctl >/dev/null 2>&1; then
+  systemctl enable --now docker
+fi
+
+if ! command -v docker >/dev/null 2>&1; then
+  echo "Docker is required. Install the local deb with apt so dependencies are installed: apt install ./${PACKAGE_NAME}_<version>_amd64.deb" >&2
+  exit 1
+fi
+
+if ! docker compose version >/dev/null 2>&1; then
+  echo "Docker Compose v2 is required. Install the local deb with apt so dependencies are installed: apt install ./${PACKAGE_NAME}_<version>_amd64.deb" >&2
+  exit 1
+fi
+
+if ! docker info >/dev/null 2>&1; then
+  echo "Docker is installed, but the Docker daemon is not reachable. Start docker.service and rerun package configuration." >&2
+  exit 1
+fi
+
+printf '[myscoutee-update-phase] LOADING_IMAGES\n'
+if compgen -G "${PACKAGE_ROOT}/images/*.tar" >/dev/null; then
+  for image_archive in ${PACKAGE_ROOT}/images/*.tar; do
+    echo "Loading bundled Docker image: ${image_archive}"
+    docker load -i "${image_archive}" >/dev/null
+  done
+fi
+
+printf '[myscoutee-update-phase] VERIFYING_IMAGES\n'
+verify_packaged_image_manifest
+ensure_service_images
+
+# Every package configuration invalidates the disposable Explore dataset. The
+# next service start consumes this marker and cleanly rebuilds demo_db plus the
+# package-owned demo MinIO prefixes. Production data and user uploads are never
+# reset by this lifecycle.
+printf '%s\n' "$(sed -n '1p' ${PACKAGE_ROOT}/packaging/VERSION)" \
+  > ${PACKAGE_STATE}/demo-reset-required
+chmod 0600 ${PACKAGE_STATE}/demo-reset-required
+
+ensure_nginx_blocklist() {
+  local directory="${PACKAGE_ETC}/nginx"
+  local list="${directory}/nginx-blocked-ips.json"
+  local legacy="${PACKAGE_ETC}/nginx-blocked-ips.json"
+  # Mount only this directory in nginx; never expose the package's other secrets.
+  if [[ -L "$directory" || ( -e "$directory" && ! -d "$directory" ) ]]; then
+    echo 'The operator nginx directory must be a regular directory.' >&2
+    return 1
+  fi
+  install -d -m 0755 "$directory"
+  if [[ ! -e "$list" && ! -L "$list" ]]; then
+    if [[ -L "$legacy" || ( -e "$legacy" && ! -f "$legacy" ) ]]; then
+      echo 'The legacy operator nginx blocklist must be a regular file.' >&2
+      return 1
+    fi
+    if [[ -f "$legacy" ]]; then mv -- "$legacy" "$list"; fi
+  fi
+  # Operator state: retain byte-for-byte on upgrades, remove only on purge.
+  if [[ -L "$list" || ( -e "$list" && ! -f "$list" ) ]]; then
+    echo 'The operator nginx blocklist must be a regular file.' >&2
+    return 1
+  fi
+  if [[ ! -e "$list" ]]; then
+    (umask 022; set -o noclobber; printf '{}\n' > "$list")
+  fi
+}
+
+ensure_nginx_blocklist
+
+if command -v systemctl >/dev/null 2>&1; then
+  systemctl daemon-reload || true
+  if systemctl is-active --quiet ${PACKAGE_NAME}.service; then
+    ${PACKAGE_ROOT}/packaging/scripts/sync-i18n-seeds.sh
+  fi
+  systemctl enable ${PACKAGE_NAME}.service >/dev/null 2>&1 || true
+  systemctl enable --now ${PACKAGE_NAME}-update-status.socket
+  systemctl try-restart ${PACKAGE_NAME}-update-status.service
+  systemctl enable --now ${PACKAGE_NAME}-update.path >/dev/null 2>&1 || true
+  systemctl enable --now ${PACKAGE_NAME}-tls.path >/dev/null 2>&1 || true
+  systemctl enable --now ${PACKAGE_NAME}-tls-renew.timer >/dev/null 2>&1 || true
+  # Native nginx owns policy refresh; retire the previous host worker.
+  systemctl disable --now ${PACKAGE_NAME}-nginx-blocklist.timer >/dev/null 2>&1 || true
+  systemctl stop ${PACKAGE_NAME}-nginx-blocklist.service >/dev/null 2>&1 || true
+fi
+
+jq -r .installationMessage "$INSTALL_POLICY"

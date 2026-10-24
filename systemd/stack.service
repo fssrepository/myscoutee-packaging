@@ -1,0 +1,22 @@
+[Unit]
+Description=@DISPLAY_NAME@ production stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+Wants=@PACKAGE_NAME@-update-status.socket
+After=@PACKAGE_NAME@-update-status.socket
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/@PACKAGE_NAME@/server
+EnvironmentFile=-/etc/@PACKAGE_NAME@/@PACKAGE_NAME@.env
+ExecStartPre=/opt/@PACKAGE_NAME@/packaging/scripts/reset-demo-state.sh
+ExecStartPre=/opt/@PACKAGE_NAME@/packaging/scripts/sync-i18n-seeds.sh --prepare-only
+ExecStartPre=/opt/@PACKAGE_NAME@/packaging/scripts/migrate-production-data.sh
+ExecStart=/opt/@PACKAGE_NAME@/packaging/scripts/myscoutee-compose.sh up -d
+ExecStop=/opt/@PACKAGE_NAME@/packaging/scripts/myscoutee-compose.sh down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

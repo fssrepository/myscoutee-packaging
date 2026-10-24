@@ -1,0 +1,10 @@
+[Unit]
+Description=Watch for operator-approved @DISPLAY_NAME@ update jobs
+After=local-fs.target
+
+[Path]
+DirectoryNotEmpty=/var/lib/@PACKAGE_NAME@/update/inbox/requests
+Unit=@PACKAGE_NAME@-update.service
+
+[Install]
+WantedBy=multi-user.target

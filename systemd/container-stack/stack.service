@@ -1,0 +1,18 @@
+[Unit]
+Description=@@DISPLAY_NAME@@ production stack
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/@@PACKAGE_NAME@@/registry.env
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/@@PACKAGE_NAME@@
+ExecStart=/opt/@@PACKAGE_NAME@@/packaging/scripts/registry-compose.sh up -d
+ExecStop=/opt/@@PACKAGE_NAME@@/packaging/scripts/registry-compose.sh down
+TimeoutStartSec=0
+TimeoutStopSec=120
+
+[Install]
+WantedBy=multi-user.target

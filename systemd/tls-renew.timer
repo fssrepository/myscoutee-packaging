@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily @DISPLAY_NAME@ certificate renewal check
+
+[Timer]
+OnCalendar=daily
+RandomizedDelaySec=2h
+Persistent=true
+Unit=@PACKAGE_NAME@-tls-renew.service
+
+[Install]
+WantedBy=timers.target

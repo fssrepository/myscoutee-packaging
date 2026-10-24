@@ -1,0 +1,44 @@
+{
+  "name": "@fssrepository/myscoutee-packaging",
+  "version": "1.5.0",
+  "description": "Shared MyScoutee Debian release and operator client tools",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "myscoutee-packaging": "bin/packaging.mjs"
+  },
+  "exports": {
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "tests/lib/",
+    "tests/fixtures/",
+    "docs/",
+    "bin/",
+    "client-tools/",
+    "release/",
+    "debian/",
+    "runtime/",
+    "compose/",
+    "verification/",
+    "systemd/",
+    "sysusers/",
+    "tests/consumer/",
+    "tests/unit/",
+    "!**/__pycache__/**",
+    "!**/*.pyc"
+  ],
+  "scripts": {
+    "test": "node --test tests/integration/client-package.test.mjs && python3 tests/unit/debian-render-test.py && python3 tests/unit/runtime-config-test.py && python3 tests/unit/service-manager-test.py && bash tests/unit/image-content-fingerprint-test.sh && python3 tests/unit/seeded-media-test.py && python3 tests/unit/update-status-server-test.py && python3 tests/unit/seed-parity-test.py && python3 tests/unit/qualification-test.py && node --test tests/unit/seed-maintenance-test.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fssrepository/myscoutee-packaging.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

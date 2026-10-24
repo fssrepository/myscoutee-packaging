@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Candidate-owned constants are rendered from the same release policy as sysusers.
+PACKAGE_NAME="${DPKG_MAINTSCRIPT_PACKAGE:?dpkg package identity is required}"
+[[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9-]{1,63}$ ]] || exit 1
+TARGET_UID=@RUNTIME_UID@
+TARGET_GID=@RUNTIME_GID@
+account="${PACKAGE_NAME}-runtime"
+[[ "${1:-}" == upgrade || "${1:-}" == install ]] || exit 0
+getent passwd "$account" >/dev/null || exit 0
+[[ "$(id -u "$account")" != "$TARGET_UID" || "$(id -g "$account")" != "$TARGET_GID" ]] || exit 0
+# A legacy worker retains its old numeric identity until it exits. This host
+# migration therefore uses the signed client installer, with no active worker.
+if systemctl is-active --quiet "${PACKAGE_NAME}-update.service"; then
+  echo 'Runtime identity migration requires the signed client installer, outside an active in-app update.' >&2
+  exit 1
+fi
+for entry in "passwd:$TARGET_UID" "group:$TARGET_GID"; do
+  owner="$(getent "${entry%%:*}" "${entry#*:}" || true)"
+  [[ -z "$owner" || "${owner%%:*}" == "$account" ]] || {
+    echo "Target runtime identity ${entry} belongs to another account." >&2; exit 1;
+  }
+done
+# Stop through the OLD package before unpacking its replacement. Its Compose
+# project, mounts and service names still describe the running installation.
+systemctl stop "${PACKAGE_NAME}.service" "${PACKAGE_NAME}-update-status.socket" \
+  "${PACKAGE_NAME}-update-status.service" "${PACKAGE_NAME}-tls.path" \
+  "${PACKAGE_NAME}-tls.service" "${PACKAGE_NAME}-tls-renew.timer" "${PACKAGE_NAME}-tls-renew.service"
+
+# A previously failed unit can leave its data containers running. Its own old
+# Compose wrapper remains the authority for stopping that partial installation.
+stop_script="/opt/${PACKAGE_NAME}/packaging/scripts/stop-production.sh"
+[[ -x "$stop_script" && ! -L "$stop_script" ]] || exit 1
+"$stop_script"

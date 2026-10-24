@@ -1,0 +1,135 @@
+{
+  "schemaVersion": 1,
+  "packageName": "myscoutee",
+  "images": [
+    {
+      "service": "nginx-base",
+      "container": null,
+      "repository": "myscoutee-nginx",
+      "tagSuffix": "base",
+      "environment": "NGINX_BASE_IMAGE",
+      "sinceVersion": "0.0.0"
+    },
+    {
+      "service": "nginx",
+      "container": "nginx",
+      "repository": "myscoutee-nginx",
+      "tagSuffix": "prod",
+      "environment": "NGINX_PRODUCTION_IMAGE",
+      "sinceVersion": "0.0.0"
+    },
+    {
+      "service": "profilemanagement",
+      "container": "myscoutee",
+      "repository": "myscoutee-api",
+      "tagSuffix": "prod",
+      "environment": "MYSCOUTEE_PRODUCTION_IMAGE",
+      "sinceVersion": "0.0.0"
+    },
+    {
+      "service": "minio",
+      "container": "minio",
+      "repository": "myscoutee-minio",
+      "tagSuffix": "prod",
+      "environment": "MINIO_PRODUCTION_IMAGE",
+      "sinceVersion": "0.0.0"
+    },
+    {
+      "service": "registry-demo",
+      "container": "registry-demo",
+      "repository": "myscoutee-registry",
+      "tagSuffix": "prod",
+      "environment": "REGISTRY_DEMO_IMAGE",
+      "sinceVersion": "0.0.0"
+    },
+    {
+      "service": "payment-simulator",
+      "container": "payment-simulator",
+      "repository": "myscoutee-payment-simulator",
+      "tagSuffix": "prod",
+      "environment": "PAYMENT_SIMULATOR_IMAGE",
+      "sinceVersion": "0.0.0"
+    },
+    {
+      "service": "mcp",
+      "container": "mcp",
+      "repository": "myscoutee-mcp",
+      "tagSuffix": "prod",
+      "environment": "MCP_IMAGE",
+      "sinceVersion": "1.3.0-qa.1"
+    }
+  ],
+  "runtimeIdentity": {
+    "uid": 10001,
+    "gid": 10001
+  },
+  "clientTools": {
+    "serverDirectory": "/opt/myscoutee/server",
+    "stateDirectory": "/var/lib/myscoutee",
+    "installationPendingFile": "demo-reset-required",
+    "composeFiles": [
+      "docker-compose-prod.yml",
+      "docker-compose.replicaset.yml"
+    ],
+    "services": [
+      {
+        "name": "nginx",
+        "imageService": "nginx",
+        "stateDirectory": "temporary-frontend",
+        "frontendVersionFile": "/usr/share/nginx/html/app-version.json"
+      },
+      {
+        "name": "profilemanagement",
+        "imageService": "profilemanagement",
+        "allowStopped": true
+      },
+      {
+        "name": "mongodb",
+        "container": "mongodb",
+        "environment": "MONGO_IMAGE",
+        "labelService": "mongodb",
+        "sameUpstream": true
+      },
+      {
+        "name": "redis",
+        "container": "redis",
+        "environment": "REDIS_IMAGE",
+        "labelService": "redis",
+        "sameUpstream": true
+      },
+      {
+        "name": "minio",
+        "imageService": "minio"
+      },
+      {
+        "name": "registry",
+        "imageService": "registry-demo"
+      },
+      {
+        "name": "payment-simulator",
+        "imageService": "payment-simulator"
+      }
+    ]
+  },
+  "hostTools": {
+    "startupFallbackVersion": "1.3.0",
+    "tls": {
+      "applicationUrlEnvironmentKeys": [
+        "EMAIL_BASE_URL",
+        "PAYMENT_SIMULATOR_PUBLIC_BASE_URL",
+        "PAYMENT_SIMULATOR_APPLICATION_BASE_URL"
+      ],
+      "localOrigins": [
+        "https://localhost",
+        "https://127.0.0.1",
+        "http://localhost:8080",
+        "http://127.0.0.1:8080"
+      ]
+    },
+    "registry": {
+      "serverDirectory": "/opt/myscoutee/server",
+      "keyDirectory": "/etc/myscoutee/registry",
+      "stateDirectory": "/var/lib/myscoutee/registry"
+    }
+  }
+}

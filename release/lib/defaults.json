@@ -1,0 +1,62 @@
+{
+  "schemaVersion": 1,
+  "build": {
+    "fallbackVersion": "1.4.0",
+    "architecture": "amd64",
+    "frontendScript": "build:prod",
+    "backendTask": ":projects:profile:bootJar",
+    "nginxNativeImage": "ghcr.io/fssrepository/myscoutee-nginx:1.4.6@sha256:6eacee48f9f4d7ab4de2ad259ab822ad3221b1946c8e41079b0d49eca882af27",
+    "publishRegistry": "ghcr.io"
+  },
+  "audit": {
+    "consumerEmailPattern": "[[:alnum:]._%+-]+@(gmail\\.com|googlemail\\.com|outlook\\.com|hotmail\\.com|live\\.com|yahoo\\.[[:alpha:].]+|icloud\\.com|me\\.com|proton(mail)?\\.com)",
+    "personalSocialPattern": "https?://([^/\"[:space:]]+\\.)?(instagram\\.com/[^/\"[:space:]][^\"[:space:]]*|facebook\\.com/[^/\"[:space:]][^\"[:space:]]*|youtube\\.com/(@|channel/|c/|user/)[^/\"[:space:]][^\"[:space:]]*)",
+    "productionSocialPattern": "https?://([^/\"[:space:]]+\\.)?(facebook\\.com|instagram\\.com|linkedin\\.com|x\\.com|twitter\\.com|tiktok\\.com|youtube\\.com|discord\\.(com|gg)|discourse\\.[^/\"[:space:]]+)/[^/\"[:space:]][^\"[:space:]]*",
+    "allowedSocialUrls": [
+      "https://www.instagram.com/myscoutee",
+      "https://www.facebook.com/myscoutee",
+      "https://www.youtube.com/@myscoutee",
+      "https://facebook.com/username",
+      "https://instagram.com/username",
+      "https://www.facebook.com/legal/terms"
+    ],
+    "allowedSeedSocialUrls": [
+      "https://www.instagram.com/myscoutee",
+      "https://www.facebook.com/myscoutee",
+      "https://www.youtube.com/@myscoutee"
+    ],
+    "nestedArchive": {
+      "consumerEmailPattern": "[A-Z0-9._%+-]+@(?:gmail\\.com|googlemail\\.com|outlook\\.com|hotmail\\.com|live\\.com|yahoo\\.[A-Z.]+|icloud\\.com|me\\.com|proton(?:mail)?\\.com)",
+      "personalSocialPattern": "https?://(?:[^/\\\"\\s]+\\.)?(?:instagram\\.com/[^/\\\"\\s][^\\\"\\s]*|facebook\\.com/[^/\\\"\\s][^\\\"\\s]*|youtube\\.com/(?:@|channel/|c/|user/)[^/\\\"\\s][^\\\"\\s]*)",
+      "publicTruststorePaths": [
+        "com/google/api/client/googleapis/google.jks"
+      ],
+      "publicTruststoreSha256": {
+        "com/google/api/client/googleapis/google.p12": "c98fba5f11f2f078ddf798fac0dcffa7e4a0ba1a9848e3e23f14210a506e827c"
+      }
+    },
+    "imageConsumerEmailPattern": "@(gmail\\.com|googlemail\\.com|outlook\\.com|hotmail\\.com|live\\.com|yahoo\\.[A-Za-z.]+|icloud\\.com|me\\.com|proton(mail)?\\.com)",
+    "imagePersonalSocialPattern": "https?://([^/\\\"[:space:]]+\\.)?(instagram\\.com/[^/\\\"[:space:]][^\\\"[:space:]]*|facebook\\.com/[^/\\\"[:space:]][^\\\"[:space:]]*|youtube\\.com/(@|channel/|c/|user/)[^/\\\"[:space:]][^\\\"[:space:]]*)",
+    "deploymentConfiguration": {
+      "id": "deployment-configuration",
+      "schemaVersion": 5
+    },
+    "forbiddenProductionCollections": [
+      "users",
+      "adminUsers",
+      "userRates",
+      "navigatorContacts",
+      "activityMembers",
+      "events",
+      "chats",
+      "chatMessages",
+      "payments"
+    ]
+  },
+  "mongo": {
+    "productionDatabase": "production_db",
+    "productionSeedDirectory": "myscoutee_db",
+    "demoSeedDirectory": "demo_db",
+    "testSeedDirectory": "e2e_db"
+  }
+}

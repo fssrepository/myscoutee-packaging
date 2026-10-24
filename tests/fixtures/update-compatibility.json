@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "requirements": [
+    {
+      "releaseAtLeast": "1.3.0-qa.1",
+      "installedAtLeast": "1.3.0-qa.1",
+      "reason": "Use the signed client installer when the installed worker predates this inventory."
+    }
+  ]
+}

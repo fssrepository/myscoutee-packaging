@@ -1,0 +1,293 @@
+{
+  "myscoutee-backend": {
+    "release": {
+      "schemaVersion": 1,
+      "packageName": "myscoutee",
+      "images": [
+        {
+          "service": "nginx-base",
+          "container": null,
+          "repository": "myscoutee-nginx",
+          "tagSuffix": "base",
+          "environment": "NGINX_BASE_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "nginx",
+          "container": "nginx",
+          "repository": "myscoutee-nginx",
+          "tagSuffix": "prod",
+          "environment": "NGINX_PRODUCTION_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "profilemanagement",
+          "container": "myscoutee",
+          "repository": "myscoutee-api",
+          "tagSuffix": "prod",
+          "environment": "MYSCOUTEE_PRODUCTION_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "minio",
+          "container": "minio",
+          "repository": "myscoutee-minio",
+          "tagSuffix": "prod",
+          "environment": "MINIO_PRODUCTION_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "registry-demo",
+          "container": "registry-demo",
+          "repository": "myscoutee-registry",
+          "tagSuffix": "prod",
+          "environment": "REGISTRY_DEMO_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "payment-simulator",
+          "container": "payment-simulator",
+          "repository": "myscoutee-payment-simulator",
+          "tagSuffix": "prod",
+          "environment": "PAYMENT_SIMULATOR_IMAGE",
+          "sinceVersion": "0.0.0"
+        },
+        {
+          "service": "mcp",
+          "container": "mcp",
+          "repository": "myscoutee-mcp",
+          "tagSuffix": "prod",
+          "environment": "MCP_IMAGE",
+          "sinceVersion": "1.3.0-qa.1"
+        }
+      ],
+      "runtimeIdentity": {
+        "uid": 10001,
+        "gid": 10001
+      },
+      "clientTools": {
+        "serverDirectory": "/opt/myscoutee/server",
+        "stateDirectory": "/var/lib/myscoutee",
+        "installationPendingFile": "demo-reset-required",
+        "composeFiles": [
+          "docker-compose-prod.yml",
+          "docker-compose.replicaset.yml"
+        ],
+        "services": [
+          {
+            "name": "nginx",
+            "imageService": "nginx",
+            "stateDirectory": "temporary-frontend",
+            "frontendVersionFile": "/usr/share/nginx/html/app-version.json"
+          },
+          {
+            "name": "profilemanagement",
+            "imageService": "profilemanagement",
+            "allowStopped": true
+          },
+          {
+            "name": "mongodb",
+            "container": "mongodb",
+            "environment": "MONGO_IMAGE",
+            "labelService": "mongodb",
+            "sameUpstream": true
+          },
+          {
+            "name": "redis",
+            "container": "redis",
+            "environment": "REDIS_IMAGE",
+            "labelService": "redis",
+            "sameUpstream": true
+          },
+          {
+            "name": "minio",
+            "imageService": "minio"
+          },
+          {
+            "name": "registry",
+            "imageService": "registry-demo"
+          },
+          {
+            "name": "payment-simulator",
+            "imageService": "payment-simulator"
+          }
+        ]
+      },
+      "hostTools": {
+        "startupFallbackVersion": "1.3.0",
+        "tls": {
+          "applicationUrlEnvironmentKeys": [
+            "EMAIL_BASE_URL",
+            "PAYMENT_SIMULATOR_PUBLIC_BASE_URL",
+            "PAYMENT_SIMULATOR_APPLICATION_BASE_URL"
+          ],
+          "localOrigins": [
+            "https://localhost",
+            "https://127.0.0.1",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080"
+          ]
+        },
+        "migration": {
+          "mediaManifest": "seeds/023-seeded-image-webp/image-replacements.json"
+        },
+        "registry": {
+          "serverDirectory": "/opt/myscoutee/server",
+          "keyDirectory": "/etc/myscoutee/registry",
+          "stateDirectory": "/var/lib/myscoutee/registry"
+        }
+      }
+    },
+    "systemd": {
+      "schemaVersion": 1,
+      "displayName": "MyScoutee"
+    },
+    "files": {
+      "systemd": {
+        "myscoutee-update-status.socket": "ba01b653cef09dc4465037760f4ef0e695a55450ea85e2fbd2521bc6887d3c63",
+        "myscoutee-tls.service": "6964389ae10d9e09276d262070192822064be3416a2372040fa2d58340ac0eb0",
+        "myscoutee-update-status.service": "097a1214235a58e98847b1e27765f5e241d25e06824916aca328786c721681d8",
+        "myscoutee-update.path": "14a0fb7dbed7c980fca4772c8145c179eee6c94f8ea93da59ae8e72570a3580d",
+        "myscoutee.service": "208075bf8acd4915c263c0fe1430d6503e6db74bf5ded63a96c6d9ba156ea432",
+        "myscoutee-tls-renew.timer": "48fbcbeffd4e23f0b4b9ef7847044a924053026e8a662f2dc5c13376daa66f3c",
+        "myscoutee-update.service": "0cc8d4c547dba4b91781eae5d454d775871a6d997fc16a55568f35b95665c358",
+        "myscoutee-tls-renew.service": "8c5a136ccf460d947f7b6845b81c627b366c83b3229ace9f1e19e5928690cc60",
+        "myscoutee-tls.path": "c6018f5b87e376f6860d67fedea3fa6182ec844881ea20f82c77db15be55c59b"
+      },
+      "sysusers": {
+        "myscoutee.conf": "ecf9f09708bb2779c98fa5e9224c654f86c9d8eb425452e7290a35c5bcf71495"
+      }
+    }
+  },
+  "myscoutee-template": {
+    "release": {
+      "schemaVersion": 1,
+      "packageName": "myscoutee-template",
+      "images": [
+        {
+          "service": "nginx-base",
+          "container": null,
+          "repository": "myscoutee-template-nginx",
+          "tagSuffix": "base",
+          "environment": "NGINX_BASE_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "nginx",
+          "container": "nginx",
+          "repository": "myscoutee-template-nginx",
+          "tagSuffix": "prod",
+          "environment": "NGINX_PRODUCTION_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "profilemanagement",
+          "container": "myscoutee-template",
+          "repository": "myscoutee-template-api",
+          "tagSuffix": "prod",
+          "environment": "MYSCOUTEE_PRODUCTION_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "minio",
+          "container": "minio",
+          "repository": "myscoutee-template-minio",
+          "tagSuffix": "prod",
+          "environment": "MINIO_PRODUCTION_IMAGE",
+          "sinceVersion": "1.0.0"
+        },
+        {
+          "service": "mcp",
+          "container": "mcp",
+          "repository": "myscoutee-template-mcp",
+          "tagSuffix": "prod",
+          "environment": "MCP_IMAGE",
+          "sinceVersion": "1.0.0"
+        }
+      ],
+      "runtimeIdentity": {
+        "uid": 10002,
+        "gid": 10002
+      },
+      "clientTools": {
+        "serverDirectory": "/opt/myscoutee-template/server",
+        "stateDirectory": "/var/lib/myscoutee-template",
+        "installationPendingFile": "demo-reset-required",
+        "composeFiles": [
+          "docker-compose-prod.yml",
+          "docker-compose.replicaset.yml"
+        ],
+        "services": [
+          {
+            "name": "nginx",
+            "imageService": "nginx",
+            "stateDirectory": "temporary-frontend",
+            "frontendVersionFile": "/usr/share/nginx/html/app-version.json"
+          },
+          {
+            "name": "profilemanagement",
+            "imageService": "profilemanagement",
+            "allowStopped": true
+          },
+          {
+            "name": "mongodb",
+            "container": "mongodb",
+            "environment": "MONGO_IMAGE",
+            "labelService": "mongodb",
+            "sameUpstream": true
+          },
+          {
+            "name": "redis",
+            "container": "redis",
+            "environment": "REDIS_IMAGE",
+            "labelService": "redis",
+            "sameUpstream": true
+          },
+          {
+            "name": "minio",
+            "imageService": "minio"
+          }
+        ]
+      },
+      "hostTools": {
+        "startupFallbackVersion": "1.3.0",
+        "tls": {
+          "applicationUrlEnvironmentKeys": [
+            "EMAIL_BASE_URL",
+            "PAYMENT_SIMULATOR_PUBLIC_BASE_URL",
+            "PAYMENT_SIMULATOR_APPLICATION_BASE_URL"
+          ],
+          "localOrigins": [
+            "https://localhost",
+            "https://127.0.0.1",
+            "http://localhost:8080",
+            "http://127.0.0.1:8080"
+          ]
+        },
+        "migration": {
+          "mediaManifest": null
+        }
+      }
+    },
+    "systemd": {
+      "schemaVersion": 1,
+      "displayName": "Template"
+    },
+    "files": {
+      "systemd": {
+        "myscoutee-template-update-status.service": "44eed98189ce24fded009f3c9319b193fd31c735ed4ade8326ed0ad2c50dc513",
+        "myscoutee-template.service": "d86662d5720083210199550fcaa25fb4b9efb6a4c93c7933714b7a1347f17789",
+        "myscoutee-template-tls-renew.timer": "04e2e5ee1fa245e7a904ab8e3531409c366facae041fa5bc9c5babab2cfdb014",
+        "myscoutee-template-tls.path": "d86f5c0107712d30e258983d85b78fd5ccde635708f9c7bc86b39ccf82a905dd",
+        "myscoutee-template-update.path": "14eae45d56d7342692bb8d6af83ccbd7d157374b0aaed5f946d1353015d22b5f",
+        "myscoutee-template-tls.service": "0cd4ba5b6c42c5e52ffc1bc425e677e66ad4c8ed43055c61fcbe929eed5235cb",
+        "myscoutee-template-tls-renew.service": "b638c7fa293c46f1025719266e68941147298957dceeb79b9f1890291c31c717",
+        "myscoutee-template-update.service": "c364e4e839fda5dfb9566f06a99a0644596f3cb090b5f767d05be600226fb7f5",
+        "myscoutee-template-update-status.socket": "763498fdbded428dcc22221f456926c4de529a85840bd58181342e4ba69bf332"
+      },
+      "sysusers": {
+        "myscoutee-template.conf": "7239c96153a6b08626b6d155342df9d34557e1caadc5a801f04fb5539277d9c4"
+      }
+    }
+  }
+}

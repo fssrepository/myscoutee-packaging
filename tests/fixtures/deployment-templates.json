@@ -1,0 +1,14 @@
+{
+  "myscoutee-backend": {
+    "myscoutee.env": "ee4bc8ccb65085e2ccf48a2d78ced973cec3fe0cb3e834bb0298a1d941ab65e8",
+    "update-release-key.README": "d67deaa4949d450c011f07c2ddd450157d650f512d9d187d5cd91c645ed30a0b",
+    "install-policy.json": "9ddc7d4400c689ee5427a3c2bee0412692084f4b3d84a69ccd12b2e41a4f48af",
+    "myscoutee.secrets.env": "2e06ec20c3886a86ccc0f90e2c2a21b15a83a248e631aa8b00a489cf7d2fddd0"
+  },
+  "myscoutee-template": {
+    "update-release-key.README": "fdd347a8e9b27dfae2c588dab829ea12630f3fa89bee35cff5da90ba09bee966",
+    "myscoutee-template.secrets.env": "c8bccb7c8caa5fdb5ba911ebbd1a5d7ed1a44a182d3c702956b7d6bdb017075e",
+    "install-policy.json": "c1e537469c4fd6e5fda56404c38b581a6d218da7d08d4265d3b74347cd115e57",
+    "myscoutee-template.env": "f67c129ff4bfbd1ffeb095dc531c003c97337645cc91756d88887c72a044cad4"
+  }
+}

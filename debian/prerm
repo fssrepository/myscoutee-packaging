@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+PACKAGE_NAME="${DPKG_MAINTSCRIPT_PACKAGE:?dpkg package identity is required}"
+[[ "$PACKAGE_NAME" =~ ^[a-z][a-z0-9-]{1,63}$ ]] || exit 1
+readonly PACKAGE_NAME
+
+cleanup_generated_opt_paths() {
+  # The TLS pair is mutable operator state. Normal removal, deconfiguration,
+  # and reinstall must preserve it; an explicit package purge owns deletion.
+  if [[ -L /opt/${PACKAGE_NAME}/server/data ]]; then
+    rm -f /opt/${PACKAGE_NAME}/server/data
+  fi
+
+  rmdir /opt/${PACKAGE_NAME}/server/docker/conf/nginx/keys >/dev/null 2>&1 || true
+  rmdir /opt/${PACKAGE_NAME}/server/docker/conf/nginx >/dev/null 2>&1 || true
+}
+
+if [[ "${1:-}" = "remove" || "${1:-}" = "deconfigure" ]]; then
+  if command -v systemctl >/dev/null 2>&1; then
+    systemctl stop ${PACKAGE_NAME}-update.path ${PACKAGE_NAME}-update.service >/dev/null 2>&1 || true
+    systemctl stop ${PACKAGE_NAME}-update-status.socket ${PACKAGE_NAME}-update-status.service >/dev/null 2>&1 || true
+    systemctl disable ${PACKAGE_NAME}-update-status.socket >/dev/null 2>&1 || true
+    systemctl stop ${PACKAGE_NAME}-tls.path ${PACKAGE_NAME}-tls.service ${PACKAGE_NAME}-tls-renew.timer ${PACKAGE_NAME}-tls-renew.service >/dev/null 2>&1 || true
+    systemctl disable ${PACKAGE_NAME}-update.path >/dev/null 2>&1 || true
+    systemctl disable ${PACKAGE_NAME}-tls.path ${PACKAGE_NAME}-tls-renew.timer >/dev/null 2>&1 || true
+    systemctl stop ${PACKAGE_NAME}-nginx-blocklist.timer ${PACKAGE_NAME}-nginx-blocklist.service >/dev/null 2>&1 || true
+    systemctl disable ${PACKAGE_NAME}-nginx-blocklist.timer >/dev/null 2>&1 || true
+    systemctl stop ${PACKAGE_NAME}.service >/dev/null 2>&1 || true
+    systemctl disable ${PACKAGE_NAME}.service >/dev/null 2>&1 || true
+  fi
+
+  cleanup_generated_opt_paths
+fi
