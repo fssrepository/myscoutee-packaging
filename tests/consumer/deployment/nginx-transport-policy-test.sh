@@ -7,6 +7,7 @@ NGINX_ROOT="${REPO_ROOT}/server/docker"
 BASE_IMAGE="${NGINX_TEST_BASE_IMAGE:-$(jq -er .baseImage "${REPO_ROOT}/config/packaging/tests/nginx-transport.json")}"
 TEST_ROOT="$(mktemp -d)"
 RUNNING_CONTAINERS=()
+TEST_NETWORK="myscoutee-nginx-transport-$$"
 
 fail() {
   echo "FAIL: $1" >&2
@@ -19,6 +20,7 @@ cleanup() {
   for container in "${RUNNING_CONTAINERS[@]}"; do
     docker rm -f "${container}" >/dev/null 2>&1 || true
   done
+  docker network rm "${TEST_NETWORK}" >/dev/null 2>&1 || true
   rm -rf "${TEST_ROOT}"
 }
 trap cleanup EXIT
@@ -30,6 +32,8 @@ done
 docker image inspect "${BASE_IMAGE}" >/dev/null 2>&1 \
   || fail "local Nginx base image is missing: ${BASE_IMAGE}"
 
+docker network create "${TEST_NETWORK}" >/dev/null
+
 DOCKERFILE="${NGINX_ROOT}/images/nginx/prod/Dockerfile"
 SPRING_TEMPLATE="${REPO_ROOT}/config/nginx/http/spring.conf"
 PROD_HTTP_POLICY="${REPO_ROOT}/config/nginx/http/http-transport-policy.prod.conf"
@@ -39,6 +43,9 @@ DEV_HTTPS_POLICY="${REPO_ROOT}/config/nginx/http/https-response-policy.conf"
 ROUTING="${REPO_ROOT}/config/nginx/http/routing.conf"
 GLOBAL_CONFIG="${TEST_ROOT}/nginx.conf"
 cp "${REPO_ROOT}/config/nginx/nginx.conf" "${GLOBAL_CONFIG}"
+OBSERVABILITY_CONFIG="${TEST_ROOT}/observability-http.conf"
+docker run --rm --network=none --entrypoint cat "${BASE_IMAGE}" \
+  /etc/nginx/myscoutee/observability-http.conf > "${OBSERVABILITY_CONFIG}"
 
 docker run --rm --network=none --entrypoint sh "${BASE_IMAGE}" -c 'test -x /scripts/nginx-production-entrypoint.sh' \
   || fail "shared image is missing its TLS-aware entrypoint"
@@ -46,8 +53,10 @@ grep -Fq 'CMD ["/scripts/nginx-production-entrypoint.sh"]' "${DOCKERFILE}" \
   || fail "production image does not execute its TLS-aware entrypoint"
 grep -Fq 'location ^~ /simulator-ui/' "${ROUTING}" \
   || fail "nginx does not expose the simulator browser assets"
-grep -Fq 'proxy_pass http://payment-simulator:18082;' "${ROUTING}" \
+grep -Fq 'proxy_pass http://payment-simulator;' "${ROUTING}" \
   || fail "nginx does not route simulator browser surfaces to the internal service"
+grep -Fq 'server payment-simulator:18082 resolve;' "${GLOBAL_CONFIG}" \
+  || fail "nginx does not resolve the simulator independently of startup"
 if grep -Eq 'location.*(/myscoutee/v1|/v1/|/v2/|/v4/|/healthz)' "${ROUTING}"; then
   fail "nginx exposes a private payment simulator provider/control route"
 fi
@@ -92,13 +101,11 @@ docker_args() {
   local config_dir="$1"
 
   printf '%s\n' \
-    --add-host profilemanagement:127.0.0.1 \
-    --add-host mcp:127.0.0.1 \
-    --add-host payment-simulator:127.0.0.1 \
-    --add-host mongodb:127.0.0.1 \
+    --network "${TEST_NETWORK}" \
     -e DOMAIN=transport.test \
     -e MYSCOUTEE_RUNTIME_STATUS_TOKEN=0123456789abcdef0123456789abcdef \
     -v "${GLOBAL_CONFIG}:/etc/nginx/nginx.conf:ro" \
+    -v "${OBSERVABILITY_CONFIG}:/etc/nginx/myscoutee/observability-http.conf:ro" \
     -v "${SPRING_TEMPLATE}:/etc/nginx/myscoutee-templates/spring.conf:ro" \
     -v "${config_dir}:/etc/nginx/conf.d" \
     -v "${TEST_ROOT}/stream:/etc/nginx/stream_conf.d:ro" \
@@ -255,7 +262,7 @@ for font in roboto-1A2B3C4D.woff2 material-icons-A1B2C3D4.woff; do
 done
 curl -skS -D "${TEST_ROOT}/named-font.headers" -o /dev/null \
   "https://127.0.0.1:${prod_https_port}/media/custom-font.woff2"
-assert_header "${TEST_ROOT}/named-font.headers" '^Cache-Control: no-cache, no-store, must-revalidate'
+assert_header "${TEST_ROOT}/named-font.headers" '^Cache-Control: no-cache[[:space:]]*$'
 assert_no_header "${TEST_ROOT}/named-font.headers" 'immutable'
 [[ "$(curl -skS -o /dev/null -w '%{http_code}' \
   "https://127.0.0.1:${prod_https_port}/media/missing-1A2B3C4D.woff2")" == 404 ]] \
@@ -269,7 +276,7 @@ curl -skS -o "${TEST_ROOT}/index-response.html" -D "${prod_root_headers}" \
   -H 'Host: transport.test' \
   "https://127.0.0.1:${prod_https_port}/"
 assert_header "${prod_root_headers}" '^Strict-Transport-Security: max-age=31536000'
-assert_header "${prod_root_headers}" '^Cache-Control: no-cache, no-store, must-revalidate'
+assert_header "${prod_root_headers}" '^Cache-Control: no-cache[[:space:]]*$'
 assert_header "${prod_root_headers}" '^X-MyScoutee-Consent-Auto: 0'
 grep -Eq 'id="myscoutee-consent-auto"[^>]*>0</script>' "${TEST_ROOT}/index-response.html" || fail "default disabled consent flag missing"
 python3 - "${TEST_ROOT}/index-response.html" <<'PY'
@@ -288,7 +295,7 @@ grep -Eq 'id="myscoutee-landing-debug"[^>]*>0</script>' "${TEST_ROOT}/index-resp
 if grep -Fq 'id="myscoutee-landing-debug-recorder"' "${TEST_ROOT}/index-response.html"; then
   fail "disabled diagnostics still request the recorder"
 fi
-python3 - "${GLOBAL_CONFIG}" <<'PYDEBUG'
+python3 - "${OBSERVABILITY_CONFIG}" <<'PYDEBUG'
 from pathlib import Path
 import sys
 p=Path(sys.argv[1]);s=p.read_text();p.write_text(s.replace('map $host $myscoutee_landing_debug { default 0; }', 'map $host $myscoutee_landing_debug { default 1; }').replace('map $host $myscoutee_consent_auto { default 0; }', 'map $host $myscoutee_consent_auto { default 1; }'))
@@ -314,9 +321,9 @@ curl -skS "https://127.0.0.1:${prod_https_port}/" | grep -Eq 'id="myscoutee-land
 curl -skS -H 'Sec-Purpose: prefetch;prerender' -H 'Sec-Fetch-User: ?1' "https://127.0.0.1:${prod_https_port}/" | grep -Fq 'id="myscoutee-landing-debug-context" type="application/json">[2,1]</script>' || fail "original HTML prerender/user hints not embedded"
 curl -skS -H 'X-Purpose: preview' "https://127.0.0.1:${prod_https_port}/" | grep -Fq 'id="myscoutee-landing-debug-context" type="application/json">[1,0]</script>' || fail "original HTML preview hint not embedded"
 curl -skS -H 'X-Purpose: <script>private</script>' "https://127.0.0.1:${prod_https_port}/" | grep -Fq 'id="myscoutee-landing-debug-context" type="application/json">[0,0]</script>' || fail "arbitrary request header escaped the numeric allowlist"
-docker exec "${prod_container}" cat /var/log/nginx/landing-debug.log | grep -Fq '/__landing-debug?d=nginx-test' || fail "dedicated debug file is empty"
+docker exec "${prod_container}" cat /tmp/myscoutee-landing-debug.log | grep -Fq '/__landing-debug?d=nginx-test' || fail "dedicated debug file is empty"
 if docker logs "${prod_container}" 2>&1 | grep -Fq '/__landing-debug?'; then fail "debug traffic leaked into the ordinary access log"; fi
-python3 - "${GLOBAL_CONFIG}" <<'PYDEBUG'
+python3 - "${OBSERVABILITY_CONFIG}" <<'PYDEBUG'
 from pathlib import Path
 import sys
 p=Path(sys.argv[1]);s=p.read_text();p.write_text(s.replace('map $host $myscoutee_landing_debug { default 1; }', 'map $host $myscoutee_landing_debug { default 0; }'))
@@ -327,7 +334,7 @@ prod_deep_link_headers="${TEST_ROOT}/prod-deep-link.headers"
 curl -skS -o /dev/null -D "${prod_deep_link_headers}" \
   -H 'Host: transport.test' \
   "https://127.0.0.1:${prod_https_port}/game"
-assert_header "${prod_deep_link_headers}" '^Cache-Control: no-cache, no-store, must-revalidate'
+assert_header "${prod_deep_link_headers}" '^Cache-Control: no-cache[[:space:]]*$'
 
 prod_worker_headers="${TEST_ROOT}/prod-worker.headers"
 curl -skS -o /dev/null -D "${prod_worker_headers}" \

@@ -76,3 +76,47 @@ test('distance generation supports another record schema and preserves other fie
   } finally { await rm(root, { recursive: true, force: true }); }
 });
 
+test('profile synchronization initializes re-exports shared with lazy modules and preserves curated records', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'seed-profiles-'));
+  try {
+    const { createRequire } = await import('node:module');
+    const { symlink } = await import('node:fs/promises');
+    const require = createRequire(import.meta.url);
+    await write(root, 'frontend/package.json', { type: 'module', sideEffects: false });
+    await mkdir(path.join(root, 'frontend/node_modules'), { recursive: true });
+    await symlink(path.dirname(require.resolve('esbuild/package.json')), path.join(root, 'frontend/node_modules/esbuild'));
+    const sources = {
+      'foundation.js': 'export const details = { level: 42 };',
+      'core.js': "export * from './foundation.js'; export const lazy = () => import('./date.js');",
+      'date.js': "import { details } from './foundation.js'; export const date = details.level + 1;",
+      'forms.js': "import { details } from './foundation.js'; import { lazy } from './core.js'; export const forms = () => details.level + lazy();",
+      'index.js': "export * from './core.js'; export * from './forms.js';",
+      'builder.ts': "import { details } from './index.js'; export class Builder { static users(count: number) { return Array.from({ length: count }, (_, i) => ({ name: `user${i}`, profileDetails: { level: details.level } })); } }",
+    };
+    for (const [file, source] of Object.entries(sources)) await writeFile(path.join(root, 'frontend', file), source);
+    await write(root, 'config/packaging/seeds/data/profile-details.json', {
+      builder: 'frontend/builder.ts', exportName: 'Builder', method: 'users', count: 1,
+      databases: ['demo', 'e2e'], seedRoot: 'seeds', collection: 'users.json',
+    });
+    const workspace = { name: 'workspace', accountUserId: 'user0', profileDetails: { keep: true } };
+    for (const db of ['demo', 'e2e']) await write(root, `seeds/${db}/users.json`, [{ name: 'user0' }, workspace]);
+    const before = await readFile(path.join(root, 'seeds/demo/users.json'), 'utf8');
+    const missing = run(root, 'synchronize-seed-profile-details', '--check');
+    assert.equal(missing.status, 1, missing.stderr);
+    assert.match(missing.stdout, /demo: 1 matched seed profiles; 1 missing/, missing.stderr);
+    assert.equal(await readFile(path.join(root, 'seeds/demo/users.json'), 'utf8'), before);
+    const applied = run(root, 'synchronize-seed-profile-details', '--write');
+    assert.equal(applied.status, 0, applied.stderr);
+    for (const db of ['demo', 'e2e']) assert.deepEqual(await read(root, `seeds/${db}/users.json`), [
+      { name: 'user0', profileDetails: { level: 42 } }, workspace,
+    ]);
+    const verified = run(root, 'synchronize-seed-profile-details', '--check');
+    assert.equal(verified.status, 0, verified.stderr);
+    await write(root, 'seeds/demo/users.json', [{ name: 'user0', profileDetails: { level: 43 } }, workspace]);
+    const curated = await readFile(path.join(root, 'seeds/demo/users.json'), 'utf8');
+    const rejected = run(root, 'synchronize-seed-profile-details', '--write');
+    assert.equal(rejected.status, 1, rejected.stderr);
+    assert.match(rejected.stderr, /existing profile details differ/);
+    assert.equal(await readFile(path.join(root, 'seeds/demo/users.json'), 'utf8'), curated);
+  } finally { await rm(root, { recursive: true, force: true }); }
+});

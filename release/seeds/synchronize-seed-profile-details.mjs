@@ -1,6 +1,8 @@
 // Materialize the configured builder's profile details into the selected Mongo fixtures.
 // No production seed or running database is modified by this command.
-import { readFile, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { pathToFileURL } from 'node:url';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 const root = process.env.MYSCOUTEE_PACKAGING_PROJECT_ROOT || process.cwd();
@@ -9,13 +11,22 @@ const frontendRequire = createRequire(path.join(root, 'frontend/package.json'));
 const { build } = frontendRequire('esbuild');
 const mode = process.argv[2];
 if (!['--check', '--write'].includes(mode)) throw Error('Use --check or --write');
-const result = await build({
-  entryPoints: [path.join(root, config.builder)],
-  inject: (config.preloadModules ?? []).map(name => frontendRequire.resolve(name)),
-  bundle: true, write: false, platform: 'node', format: 'esm', logLevel: 'silent'
-});
-const builders = await import(`data:text/javascript;base64,${Buffer.from(result.outputFiles[0].text).toString('base64')}`);
-const seeds = builders[config.exportName][config.method](config.count);
+// Keep lazy ESM dependencies separate. A single-file bundle can omit the
+// initialization of values re-exported through a side-effect-free barrel.
+const output = await mkdtemp(path.join(tmpdir(), 'myscoutee-seed-profile-'));
+let seeds;
+try {
+  await build({
+    entryPoints: { builder: path.join(root, config.builder) },
+    inject: (config.preloadModules ?? []).map(name => frontendRequire.resolve(name)),
+    bundle: true, splitting: true, outdir: output,
+    outExtension: { '.js': '.mjs' }, platform: 'node', format: 'esm', logLevel: 'silent'
+  });
+  const builders = await import(pathToFileURL(path.join(output, 'builder.mjs')));
+  seeds = builders[config.exportName][config.method](config.count);
+} finally {
+  await rm(output, { recursive: true, force: true });
+}
 const byName = new Map(seeds.map(user => [user.name, user]));
 if (byName.size !== seeds.length) throw Error('Ambiguous local seed name mapping');
 let mismatch = false;

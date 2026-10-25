@@ -228,7 +228,8 @@ export function buildChecks(ctx) {
         'index.html and app-version.json should identify the same frontend build',
         { indexBuildId: extractBuildId(root.text), versionBuildId: buildId }
       );
-      assertFrontendEntryRevalidates(root, 'index.html');
+      // The public shell can remain in bfcache; update metadata and workers cannot.
+      assertFrontendEntryRevalidates(root, 'index.html', { requireNoStore: false });
       assertFrontendEntryRevalidates(versionResult, 'app-version.json');
       if (ctx.expectedVersion) {
         assert(
@@ -467,8 +468,8 @@ export function buildChecks(ctx) {
         ctx.get('/api/operator/configuration', { maxBodyBytes: 65536 }),
         ctx.get('/api/operator/configuration/tls', { maxBodyBytes: 65536 })
       ]);
-      expectStatus(configuration, 403, 'anonymous Operator configuration');
-      expectStatus(tls, 403, 'anonymous Operator TLS configuration');
+      expectStatus(configuration, 401, 'anonymous Operator configuration');
+      expectStatus(tls, 401, 'anonymous Operator TLS configuration');
       for (const result of [configuration, tls]) {
         assert(
           !/credentialMask|privateKey|certificatePem|masterKey|adminEmails/i.test(result.text),
@@ -695,11 +696,11 @@ function assertImmutableAsset(result, label) {
   );
 }
 
-function assertFrontendEntryRevalidates(result, label) {
+function assertFrontendEntryRevalidates(result, label, { requireNoStore = true } = {}) {
   const cacheControl = `${result.headers['cache-control'] ?? ''}`.toLowerCase();
   assert(
-    cacheControl.includes('no-cache') && cacheControl.includes('no-store')
-      && cacheControl.includes('must-revalidate') && !cacheControl.includes('immutable'),
+    cacheControl.includes('no-cache') && !cacheControl.includes('immutable')
+      && (!requireNoStore || (cacheControl.includes('no-store') && cacheControl.includes('must-revalidate'))),
     `${label} should always revalidate and must never use immutable caching`,
     { cacheControl }
   );

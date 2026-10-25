@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
           version="${GITHUB_REF_NAME#v}"
           archive="$RUNNER_TEMP/fssrepository-myscoutee-packaging-$version.tgz"
-          npm publish "$archive" --registry=https://npm.pkg.github.com
+          npm publish "$archive" --tag latest --registry=https://npm.pkg.github.com
           expected="$(node --input-type=module -e 'import { createHash } from "node:crypto"; import { readFileSync } from "node:fs"; console.log("sha512-" + createHash("sha512").update(readFileSync(process.argv[1])).digest("base64"))' "$archive")"
           actual="$(npm view "@fssrepository/myscoutee-packaging@$version" dist.integrity --registry=https://npm.pkg.github.com)"
           [[ "$actual" == "$expected" ]]
@@ -90,5 +90,10 @@ jobs:
             printf 'Registry: `https://npm.pkg.github.com`\n\nSource: `%s`\n\n' "$GITHUB_SHA"
             printf 'Shared helper checks passed. Registry integrity matches the attached tarball.\n'
           } > "$RUNNER_TEMP/release-notes.md"
-          gh release create "$GITHUB_REF_NAME" "$archive" "$RUNNER_TEMP/SHA256SUMS" \
-            --verify-tag --title "MyScoutee Packaging $version" --notes-file "$RUNNER_TEMP/release-notes.md"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "MyScoutee Packaging $version" --notes-file "$RUNNER_TEMP/release-notes.md"
+            gh release upload "$GITHUB_REF_NAME" "$archive" "$RUNNER_TEMP/SHA256SUMS" --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" "$archive" "$RUNNER_TEMP/SHA256SUMS" \
+              --verify-tag --title "MyScoutee Packaging $version" --notes-file "$RUNNER_TEMP/release-notes.md"
+          fi

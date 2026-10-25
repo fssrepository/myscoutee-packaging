@@ -40,5 +40,8 @@
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2"
   }
 }

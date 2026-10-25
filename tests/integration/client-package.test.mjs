@@ -59,6 +59,12 @@ test('the packed dependency builds both products outside the workspace', () => {
       }
       const cli = resolve(installed, 'bin/packaging.mjs');
       assert.match(run('node', [cli, '--project-root', project, 'verify', '--list']), product === 'myscoutee-backend' ? /backend\/landing/ : /backend\/documents/);
+      const verifierEnvironment = { ...process.env, MYSCOUTEE_PACKAGING_PROJECT_ROOT: project };
+      delete verifierEnvironment.NODE_TEST_CONTEXT;
+      const verifierTests = run('node', ['--test', '--test-reporter=tap', resolve(installed, 'tests/unit/public-verifier-test.mjs')], {
+        env: verifierEnvironment,
+      });
+      assert.match(verifierTests, /# pass [1-9][0-9]*\b/);
       assert.match(run('node', [cli, '--project-root', project, 'test', '--list']), /install-policy-test.py/);
       run('node', [cli, '--project-root', project, 'test', 'install-policy-test.py']);
       const deploymentTemplates = JSON.parse(run('python3', [resolve(installed, 'release/build/render-debian.py'), resolve(project, 'packaging'), '-', '--component', 'templates']));
