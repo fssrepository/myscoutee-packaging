@@ -172,3 +172,7 @@ container that has no public route. In particular, the Debian package's demo
 registry is intentionally internal and is not invented as a public endpoint
 here. The separately deployed Go registry keeps its own black-box E2E suite
 in the registry repository.
+
+The backend checks also require `/api/runtime-status` and the HTML bootstrap
+snapshot to report `known: true` and `ready: true`. A healthy API alone cannot
+pass verification while the browser would select its offline mode.

@@ -32,7 +32,7 @@
     "!**/*.pyc"
   ],
   "scripts": {
-    "test": "node --test tests/integration/client-package.test.mjs && python3 tests/unit/debian-render-test.py && python3 tests/unit/runtime-config-test.py && python3 tests/unit/service-manager-test.py && bash tests/unit/image-content-fingerprint-test.sh && python3 tests/unit/seeded-media-test.py && python3 tests/unit/update-status-server-test.py && python3 tests/unit/seed-parity-test.py && python3 tests/unit/qualification-test.py && node --test tests/unit/seed-maintenance-test.mjs"
+    "test": "node --test tests/integration/client-package.test.mjs && python3 tests/unit/debian-render-test.py && python3 tests/unit/runtime-config-test.py && python3 tests/unit/service-manager-test.py && bash tests/unit/image-content-fingerprint-test.sh && python3 tests/unit/seeded-media-test.py && python3 tests/unit/update-status-server-test.py && python3 tests/unit/seed-parity-test.py && python3 tests/unit/qualification-test.py && node --test tests/unit/seed-maintenance-test.mjs && node --test tests/unit/public-verifier-test.mjs"
   },
   "repository": {
     "type": "git",

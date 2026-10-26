@@ -25,6 +25,7 @@ export const CHECK_CATALOG = [
   ['frontend/build-pwa', 'matching build metadata and PWA artifacts'],
   ['frontend/precache-assets', 'complete service-worker precache artifact set'],
   ['backend/health', 'Spring and dependency health'],
+  ['backend/runtime-readiness', 'browser readiness endpoint and embedded shell status'],
   ['backend/public-configuration', 'public-only deployment configuration'],
   ['backend/i18n', 'seeded English translation bundle'],
   ...PROJECT_CHECK_CATALOG,
@@ -378,6 +379,23 @@ export function buildChecks(ctx) {
         'strict-origin-when-cross-origin',
         'Spring health'
       );
+    }),
+
+    check('backend/runtime-readiness', 'browser readiness endpoint and embedded shell status', async () => {
+      const [result, shell] = await Promise.all([
+        ctx.get('/api/runtime-status', { maxBodyBytes: 8192 }), ctx.root()
+      ]);
+      expectStatus(result, 200, 'browser runtime status');
+      expectContentType(result, 'json', 'browser runtime status');
+      const status = expectObject(expectJson(result, 'browser runtime status'), 'browser runtime status');
+      assert(status.known === true && status.ready === true,
+        'browser runtime status must be known and ready', status);
+      const embedded = shell.text.match(/<script\b[^>]*\bid=["']myscoutee-runtime-status["'][^>]*>([\s\S]*?)<\/script>/i);
+      assert(embedded, 'frontend shell must embed browser runtime status');
+      let bootstrap;
+      try { bootstrap = JSON.parse(embedded[1]); } catch { assert(false, 'embedded runtime status must be valid JSON'); }
+      assert(bootstrap?.known === true && bootstrap?.ready === true,
+        'embedded browser runtime status must be known and ready', bootstrap);
     }),
 
     check('backend/public-configuration', 'public-only deployment configuration', async () => {

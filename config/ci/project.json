@@ -1,0 +1,15 @@
+{
+  "project": "myscoutee-packaging",
+  "type": "npm",
+  "depends_on": [],
+  "fixtures": [
+    "myscoutee-backend",
+    "myscoutee-template",
+    "myscoutee-registry"
+  ],
+  "variables": {
+    "LAB_GITHUB_REPOSITORY": "fssrepository/myscoutee-packaging"
+  },
+  "release_notes": "guides/releases/v{version}.md",
+  "release_name": "MyScoutee Packaging"
+}
